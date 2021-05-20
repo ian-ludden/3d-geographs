@@ -12,94 +12,88 @@ using namespace std;
 
 namespace gg3d {
 
-    struct Edge {
-        // Undirected; by convention, src < dest
-        int src, dest;
-    };
+struct Edge;
 
-    class static_graph {
-    public:
-        vector<vector<int>> adjacency_list; // List of adjacency lists
-        int size; // Number of vertices
-        vector<string> vertex_name; // List of vertex names, indexed by ID
-        
-        /** Constructor for static graph. 
-         * Builds graph from list of edges and number of vertices. 
-         * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
-         * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
-         * */
-        static_graph(const vector<Edge> &edges, int number_of_vertices) {
-            // Build strings of default names
-            vector<string> vertex_names; 
-            vertex_names.reserve(number_of_vertices); 
-            for (int i = 0; i < number_of_vertices; ++i) {
-                vertex_names.push_back(to_string(i)); 
+/** Constructor for static graph. 
+ * Builds graph from list of edges and number of vertices. 
+ * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
+ * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
+ * */
+static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices) {
+    // Build strings of default names
+    vector<string> vertex_names; 
+    vertex_names.reserve(number_of_vertices); 
+    for (int i = 0; i < number_of_vertices; ++i) {
+        vertex_names.push_back(to_string(i)); 
+    }
+
+    static_graph(edges, number_of_vertices, vertex_names);
+};
+
+/** Alternate constructor for static graph, 
+ * allowing vertex names to be specified (rather than default of 0 to n-1). 
+ * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
+ * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
+ * \param[in] (&vertex_names) pointer to vector of string names of vertices, in order. 
+ * */
+static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices, const vector<string> &vertex_names) {
+    adjacency_list.resize(number_of_vertices);
+    vertex_name.resize(number_of_vertices);
+    size = number_of_vertices;
+
+    // For each edge, add src/dest to each other's adj lists
+    for (auto &edge: edges) {
+        adjacency_list[edge.src].push_back(edge.dest);
+        adjacency_list[edge.dest].push_back(edge.src);
+    }
+
+    // For each vertex, save its name to vertex_name
+    for (int i = 0; i < number_of_vertices; ++i) {
+        vertex_name[i] = vertex_names[i];
+    }
+};
+
+/**
+ * Check whether the induced subgraph of the given list of vertices 
+ * is connected, using a standard breadth-first search (BFS) 
+ * from the first vertex in the list. 
+ * \param[in] (vertices) pointer to vector of vertex indices (not their string names)
+ * */
+bool static_graph::is_connected_subgraph(vector<int> &vertices) {
+    if (vertices.size() <= 0) return false; // For our purposes, the empty graph is not connected
+
+    vector<bool> is_found(this->size, false); // Indicator vector for visited vertices
+    vector<bool> is_available(size, false); // Indicator vector for vertices in the induced subgraph
+    for (auto &vertex: vertices) is_available[vertex] = true;
+
+    // Run BFS starting from the first vertex
+    queue<int> frontier;
+    is_found[vertices[0]] = true;
+    frontier.push(vertices[0]);
+
+    while (!frontier.empty()) {
+        int current_vertex = frontier.front();
+        frontier.pop();
+
+        // Add unvisited neighbors to the queue if in the induced subgraph
+        for (auto &neighbor_vertex: adjacency_list[current_vertex]) {
+            if (is_available[neighbor_vertex] && !is_found[neighbor_vertex]) {
+                is_found[neighbor_vertex] = true;
+                frontier.push(neighbor_vertex);
             }
+        }
+    }
 
-            static_graph(edges, number_of_vertices, vertex_names);
-        };
+    // Did we find them all? 
+    bool all_found = true;
+    for (int i = 0; i < size; ++i) {
+        // Need to negate logical XOR(is_available, is_found)
+        all_found = all_found && !(is_available[i] != is_found[i]); 
+    }
 
-        /** Alternate constructor for static graph, 
-         * allowing vertex names to be specified (rather than default of 0 to n-1). 
-         * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
-         * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
-         * \param[in] (&vertex_names) pointer to vector of string names of vertices, in order. 
-         * */
-        static_graph(const vector<Edge> &edges, int number_of_vertices, const vector<string> &vertex_names) {
-            adjacency_list.resize(number_of_vertices);
-            vertex_name.resize(number_of_vertices);
-            size = number_of_vertices;
+    return all_found;
+};
 
-            // For each edge, add src/dest to each other's adj lists
-            for (auto &edge: edges) {
-                adjacency_list[edge.src].push_back(edge.dest);
-                adjacency_list[edge.dest].push_back(edge.src);
-            }
-
-            // For each vertex, save its name to vertex_name
-            for (int i = 0; i < number_of_vertices; ++i) {
-                vertex_name[i] = vertex_names[i];
-            }
-        };
-
-        /**
-         * Check whether the induced subgraph of the given list of vertices 
-         * is connected, using a standard breadth-first search (BFS) 
-         * from the first vertex in the list. 
-         * */
-        bool is_connected_subgraph(vector<int> vertices) const {
-            if (vertices.size() <= 0) return false;
-
-            vector<bool> is_found(size, false);
-            vector<bool> is_available(size, false);
-            for (auto &vertex: vertices) is_available[vertex] = true;
-
-            queue<int> frontier;
-            is_found[vertices[0]] = true;
-            frontier.push(vertices[0]);
-
-            while (!frontier.empty()) {
-                int current_vertex = frontier.front();
-                frontier.pop();
-
-                for (auto &neighbor_vertex: adjacency_list[current_vertex]) {
-                    if (is_available[neighbor_vertex] && !is_found[neighbor_vertex]) {
-                        is_found[neighbor_vertex] = true;
-                        frontier.push(neighbor_vertex);
-                    }
-                }
-            }
-
-            // Did we find them all? 
-            bool all_found = true;
-            for (int i = 0; i < size; ++i) {
-                // Need to negate XOR(is_available, is_found)
-                all_found = all_found && !(is_available[i] != is_found[i]); 
-            }
-
-            return all_found;
-        };
-    };
 }
 
 std::string int_vector_to_string(const vector<int> &vector_of_ints) {

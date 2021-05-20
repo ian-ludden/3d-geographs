@@ -2,12 +2,12 @@
  * \file 3dgeograph.hh
  * \brief Header file for 3dgeograph. */
 
-#ifndef THREE_DEE_GEOGRAPH_HH
-#define THREE_DEE_GEOGRAPH_HH
+#ifndef GEOGRAPH3D_HH
+#define GEOGRAPH3D_HH
 
 #include <vector>
 
-namespace tdgg {
+namespace gg3d {
     
 }
 

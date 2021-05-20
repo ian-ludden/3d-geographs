@@ -3,7 +3,7 @@
  * \brief Implementation of the 3-D geo-graph. */
 #include "3dgeograph.hh"
 
-namespace 3dgg {
+namespace gg3d {
 
 /** Constructor for 3-D geo-graph. 
  * Builds representation of 3-D geo-graph from 

@@ -58,10 +58,10 @@ int main() {
 
     // Print column headers of CSV output file
     FILE * fp = safe_fopen("random_points_box_output.csv", "w");
-    fprintf(fp, "ID,Coordinates,No. Neighbors,Neighbors,Face Vertices\n");
+    fprintf(fp, "ID,Coordinates,No. Neighbors,Neighbors,Face Vertices,Vertices Absolute Coords\n");
     // Output Voronoi cells with neighbor info. 
     // See http://math.lbl.gov/voro++/doc/voro++_overview.pdf, 
     // Section 6, to interpret format string. 
-    con.print_custom("%i,%q,%s,%n,%t", fp);
+    con.print_custom("%i,%q,%s,%n,%t,%P", fp);
     fclose(fp);
 }

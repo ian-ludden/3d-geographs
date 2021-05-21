@@ -27,6 +27,10 @@ public:
         return std::string(&m_line[m_data[index] + 1], m_data[index + 1] - (m_data[index] + 1));
     };
 
+    int size() const {
+        return m_data.size();
+    }
+
     void read_next_row(std::istream & str) {
         std::getline(str, m_line);
 
@@ -53,9 +57,13 @@ public:
                     pos = m_line.find(')', next_paren_pos);
                     next_paren_pos = m_line.find('(', pos);
                     next_comma_pos = m_line.find(',', pos);
-                } while (next_paren_pos < next_comma_pos);
+                } while (next_paren_pos < next_comma_pos 
+                         && next_paren_pos > 0);
                 
-                pos = next_comma_pos;
+                if (next_comma_pos > 0
+                    && next_comma_pos < m_line.size()) {
+                        pos = next_comma_pos;
+                }
             }
         }
 

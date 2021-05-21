@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 using std::cout;
 using std::string;
 using std::vector;
@@ -29,12 +30,13 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     std::ifstream in_file(in_filename);
 
     in_file >> row; // Read first line with number of cells
-    cout << (string) row[0];
     total_particles = stoi(row[0]);
+    cout << "There are " << total_particles << " cells.\n";
     
     // Cell IDs (integers from 0 to total_particles - 1, inclusive)
-    vector<int> id;
-    id.reserve(total_particles);
+    // mapped to indices for other vectors
+    vector<int> id_to_index;
+    id_to_index.resize(total_particles);
 
     // Number of neighbors for each cell, indexed by ID
     // int neighbor_count[total_particles];
@@ -60,23 +62,28 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     int index = 0;
 
     while (in_file >> row) {
-        id[index] = stoi(row[0]);
-        // neighbor_count[id[index]] = stoi(row[1]); // Don't really need neighbor counts
-        faces[id[index]] = row[4];
+        id_to_index[stoi(row[0])] = index;
+        // neighbor_count[id_to_index[index]] = stoi(row[1]); // Don't really need neighbor counts
+        string faces_string = row[3];
+        std::replace(faces_string.begin(), faces_string.end(), ',', ' ');
+        faces.push_back(faces_string);
 
         string neighbors_line = row[2];
         size_t pos = 0;
         size_t prev_pos = -1;
+        vector<int> neighbor_list;
+        neighbor_list.reserve(stoi(row[1]));
         while ((pos = neighbors_line.find(' ', pos)) != string::npos) {
-            neighbors[id[index]].push_back(stoi(neighbors_line.substr(prev_pos + 1, pos)));
+            neighbor_list.push_back(stoi(neighbors_line.substr(prev_pos + 1, pos)));
             prev_pos = pos;
             ++pos;
         }
+        neighbors.push_back(neighbor_list);
         
         // Look for vertices
         // Takes O(V^2) time, added over all iterations of while loop, 
         // where V is the number of vertices. 
-        string vertices_string = row[5];
+        string vertices_string = (string) row[4];
         //TODO : Continue here
         // use atof to convert strings to doubles; 
         // probably want to write some utility function to turn a tuple into a vector, 
@@ -93,10 +100,36 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     out_file << total_particles << "\n"; // Number of cells/particles
     out_file << "ID,Neighbors,Aug. Neighbors,Faces\n";
 
-    index = 0;
-    while (index < total_particles) {
-        int cell_id = id[index];
-        out_file << cell_id << ",";
+    int id = 0;
+    while (id < total_particles) {
+        int cell_index = id_to_index[id];
+        out_file << cell_index << ",";
+        
+        vector<int> neighbor_list = neighbors[cell_index];
+        std::vector<int>::size_type neighbor_index = 0;
+        // Print first neighbor first to avoid extra space
+        out_file << neighbor_list[neighbor_index++];
+        while (neighbor_index < neighbor_list.size()) {
+            out_file << " " << neighbor_list[neighbor_index++];
+        }
+        
+        out_file << ",";
+        
+        // Write list of (additional) augmented neighbors
+        vector<int> aug_neighbor_list = aug_neighbors[cell_index];
+        std::vector<int>::size_type aug_neighbor_index = 0;
+        // Print first aug neighbor before loop to avoid extra space
+        out_file << aug_neighbor_list[aug_neighbor_index++]; // TODO Fix seg fault here
+        while (aug_neighbor_index < aug_neighbor_list.size()) {
+            out_file << " " << aug_neighbor_list[aug_neighbor_index];
+        }
+
+        out_file << ",";
+
+        // Write list of faces with commas in tuples replaced by spaces
+        out_file << faces[cell_index];
+
+        out_file << "\n";
 
         ++index;
     }

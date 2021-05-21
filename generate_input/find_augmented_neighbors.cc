@@ -29,25 +29,30 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     std::ifstream in_file(in_filename);
 
     in_file >> row; // Read first line with number of cells
+    cout << (string) row[0];
     total_particles = stoi(row[0]);
     
     // Cell IDs (integers from 0 to total_particles - 1, inclusive)
-    int id[total_particles];
+    vector<int> id;
+    id.reserve(total_particles);
 
     // Number of neighbors for each cell, indexed by ID
     // int neighbor_count[total_particles];
 
     // Lists of neighbors (by ID) for each cell, indexed by ID
-    vector<int> neighbors[total_particles];
+    vector<vector<int>> neighbors;
+    neighbors.reserve(total_particles);
 
     // Lists of augmented neighbors (by ID) for each cell, indexed by ID
-    vector<int> aug_neighbors[total_particles];
+    vector<vector<int>> aug_neighbors;
+    aug_neighbors.reserve(total_particles);
 
     // List of cell vertices, stored as 3-tuples of doubles
     vector<vector<double>> vertices;
 
     // Strings of face tuples, to be used to determine surface dual graphs
-    string faces[total_particles];
+    vector<string> faces;
+    faces.reserve(total_particles);
 
     // Vector of cell vertices, to be used to determine augmented neighbors.
     
@@ -100,6 +105,10 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
 }
 
 int main() {
+    cout << "test print\n";
+    cout << "breakpoint on this line\n";
+    cout << "past breakpoint\n";
+
     std::string in_filename = "uniform_grid_output_full.csv";
     std::string out_filename = "uniform_grid_output_aug_neighbors.csv";
     

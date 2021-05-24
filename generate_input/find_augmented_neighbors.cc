@@ -3,10 +3,9 @@
  * into format needed to construct 3-D geo-graph. 
  */
 #include "find_augmented_neighbors.hh"
+#include "vector_utils.hh"
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <vector>
 #include <algorithm>
 using std::cout;
 using std::string;
@@ -17,6 +16,30 @@ using std::vector;
  * two vertices in \reals^3 are equal. 
  */
 const double VERTEX_TOLERANCE = 1.0e-10;
+
+/**
+ * Determines whether the two given vertices (as vectors of doubles 
+ * representing each coordinate) are the same vertex, within a given tolerance.
+ * 
+ * \param[in] (v1) Vertex 1, given as a vector of `double` coordinates. 
+ * \param[in] (v2) Vertex 2, given as a vector of `double` coordinates. 
+ * \param[in] (tol) Absolute tolerance for considering two entries equal. 
+ * 
+ * \return true if the vertices agree (within tolerance tol) in every entry; false otherwise
+ */
+bool is_same_vertex(vector<double> v1, vector<double> v2, const double tol) {
+    if (v1.size() != v2.size()) {
+        return false; // Could also consider raising an exception
+    }
+
+    for (size_t i = 0; i < v1.size(); ++i) {
+        if ((v1[i] > v2[i] + tol) || (v1[i] < v2[i] - tol)) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 std::istream & operator>>(std::istream & str, csv_row & data) {
     data.read_next_row(str);
@@ -80,14 +103,29 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         }
         neighbors.push_back(neighbor_list);
         
-        // Look for vertices
+        // Look for duplicate vertices; index them all. 
         // Takes O(V^2) time, added over all iterations of while loop, 
         // where V is the number of vertices. 
         string vertices_string = (string) row[4];
+
+        size_t left_pos = vertices_string.find('('); 
+        size_t right_pos;
+        while (left_pos < vertices_string.length()) {
+            right_pos = vertices_string.find(')', left_pos);
+            
+            string cell_vertices_tuple = vertices_string.substr(left_pos, right_pos - left_pos + 1);
+            vector<double> cell_vertices = tuple_to_vector_of_double(cell_vertices_tuple);
+            vertices.push_back(cell_vertices);
+            
+            left_pos = vertices_string.find('(', right_pos);
+        }
+
         //TODO : Continue here
         // use atof to convert strings to doubles; 
         // probably want to write some utility function to turn a tuple into a vector, 
         // since that keeps coming up. 
+
+        // Use vertices to find augmented neighbors
 
         ++index;
     }
@@ -118,10 +156,13 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         // Write list of (additional) augmented neighbors
         vector<int> aug_neighbor_list = aug_neighbors[cell_index];
         std::vector<int>::size_type aug_neighbor_index = 0;
-        // Print first aug neighbor before loop to avoid extra space
-        out_file << aug_neighbor_list[aug_neighbor_index++]; // TODO Fix seg fault here
-        while (aug_neighbor_index < aug_neighbor_list.size()) {
-            out_file << " " << aug_neighbor_list[aug_neighbor_index];
+
+        if (!aug_neighbor_list.empty()) {
+            // Print first aug neighbor before loop to avoid extra space
+            out_file << aug_neighbor_list[aug_neighbor_index++]; // TODO Fix seg fault here
+            while (aug_neighbor_index < aug_neighbor_list.size()) {
+                out_file << " " << aug_neighbor_list[aug_neighbor_index];
+            }
         }
 
         out_file << ",";
@@ -131,16 +172,22 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
 
         out_file << "\n";
 
-        ++index;
+        ++id;
     }
 
     out_file.close();
 }
 
 int main() {
-    cout << "test print\n";
-    cout << "breakpoint on this line\n";
-    cout << "past breakpoint\n";
+    vector<double> test_vec = tuple_to_vector_of_double("(10.4, 67.3543, 1935");
+
+    vector<double> vec1 = {0.333333333333333333, 0.2, 0.4};
+    vector<double> vec2 = {0.333333333333333, 0.2, 0.4};
+    if (is_same_vertex(vec1, vec2, VERTEX_TOLERANCE)) {
+        cout << "vec1 and vec2 are the same\n";
+    } else {
+        cout << "vec1 and vec2 are different.\n";
+    }
 
     std::string in_filename = "uniform_grid_output_full.csv";
     std::string out_filename = "uniform_grid_output_aug_neighbors.csv";

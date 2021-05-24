@@ -61,6 +61,10 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     vector<int> id_to_index;
     id_to_index.resize(total_particles);
 
+    // Reverse map of id_to_index
+    vector<int> index_to_id;
+    index_to_id.reserve(total_particles);
+
     // Number of neighbors for each cell, indexed by ID
     // int neighbor_count[total_particles];
 
@@ -75,6 +79,9 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     // List of cell vertices, stored as 3-tuples of doubles
     vector<vector<double>> vertices;
 
+    // List of vertex indices (by ID) for each cell, indexed by ID
+    vector<vector<size_t>> vertex_indices;
+
     // Strings of face tuples, to be used to determine surface dual graphs
     vector<string> faces;
     faces.reserve(total_particles);
@@ -85,8 +92,10 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     int index = 0;
 
     while (in_file >> row) {
-        id_to_index[stoi(row[0])] = index;
-        // neighbor_count[id_to_index[index]] = stoi(row[1]); // Don't really need neighbor counts
+        int id = stoi(row[0]);
+        id_to_index[id] = index;
+        index_to_id.push_back(id);
+        int neighbor_count = stoi(row[1]);
         string faces_string = row[3];
         std::replace(faces_string.begin(), faces_string.end(), ',', ' ');
         faces.push_back(faces_string);
@@ -95,37 +104,74 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         size_t pos = 0;
         size_t prev_pos = -1;
         vector<int> neighbor_list;
-        neighbor_list.reserve(stoi(row[1]));
+        neighbor_list.reserve(neighbor_count);
         while ((pos = neighbors_line.find(' ', pos)) != string::npos) {
-            neighbor_list.push_back(stoi(neighbors_line.substr(prev_pos + 1, pos)));
+            int neighbor_id = stoi(neighbors_line.substr(prev_pos + 1, pos));
+            if (neighbor_id < 0) neighbor_id = -1; // Collapse all walls to -1
+            neighbor_list.push_back(neighbor_id);
             prev_pos = pos;
             ++pos;
         }
+        // Catch last neighbor in space-separated list
+        int neighbor_id = stoi(neighbors_line.substr(prev_pos + 1, neighbors_line.length() - prev_pos));
+        if (neighbor_id < 0) neighbor_id = -1; // Collapse all walls to -1
+        neighbor_list.push_back(neighbor_id);
         neighbors.push_back(neighbor_list);
         
-        // Look for duplicate vertices; index them all. 
+        // Index the (unique) vertices, checking for duplicates. 
         // Takes O(V^2) time, added over all iterations of while loop, 
         // where V is the number of vertices. 
         string vertices_string = (string) row[4];
+
+        vector<size_t> vertex_indices_vec;
 
         size_t left_pos = vertices_string.find('('); 
         size_t right_pos;
         while (left_pos < vertices_string.length()) {
             right_pos = vertices_string.find(')', left_pos);
             
-            string cell_vertices_tuple = vertices_string.substr(left_pos, right_pos - left_pos + 1);
-            vector<double> cell_vertices = tuple_to_vector_of_double(cell_vertices_tuple);
-            vertices.push_back(cell_vertices);
-            
+            string cell_vertex_tuple = vertices_string.substr(left_pos, right_pos - left_pos + 1);
+            vector<double> cell_vertex = tuple_to_vector_of_double(cell_vertex_tuple);
+
+            size_t v_index = vertices.size();
+            bool is_new = true;
+
+            // Check whether this vertex has already been indexed
+            for (size_t i = 0; i < vertices.size(); ++i) {
+                if (is_same_vertex(vertices[i], cell_vertex, VERTEX_TOLERANCE)) {
+                    v_index = i;
+                    is_new = false;
+                    break;
+                }
+            }
+            vertex_indices_vec.push_back(v_index);
+
+            if (is_new) {
+                vertices.push_back(cell_vertex);
+            }
+
             left_pos = vertices_string.find('(', right_pos);
         }
 
-        //TODO : Continue here
-        // use atof to convert strings to doubles; 
-        // probably want to write some utility function to turn a tuple into a vector, 
-        // since that keeps coming up. 
+        vertex_indices.push_back(vertex_indices_vec);
 
         // Use vertices to find augmented neighbors
+        // Loop over all previous cells, then all pairs of vertices from this cell and previous
+        vector<int> aug_neighbors_of_current;
+        for (int other_index = 0; other_index < index; ++other_index) {
+            bool is_aug_neighbor = false;
+            for (size_t i = 0; i < vertex_indices[index].size(); ++i) {
+                for (size_t j = 0; j < vertex_indices[j].size(); ++j) {
+                    is_aug_neighbor = is_aug_neighbor || (vertex_indices[index][i] == vertex_indices[other_index][j]);
+                }
+            }
+            // Only add to augmented neighbors list if not already a neighbor
+            if (is_aug_neighbor && !(std::count(neighbor_list.begin(), neighbor_list.end(), index_to_id[other_index]))) {
+                aug_neighbors_of_current.push_back(index_to_id[other_index]);
+                aug_neighbors[other_index].push_back(index_to_id[index]); // Add aug neighbor relationship in both directions
+            }
+        }
+        aug_neighbors.push_back(aug_neighbors_of_current);
 
         ++index;
     }
@@ -159,9 +205,9 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
 
         if (!aug_neighbor_list.empty()) {
             // Print first aug neighbor before loop to avoid extra space
-            out_file << aug_neighbor_list[aug_neighbor_index++]; // TODO Fix seg fault here
+            out_file << aug_neighbor_list[aug_neighbor_index++];
             while (aug_neighbor_index < aug_neighbor_list.size()) {
-                out_file << " " << aug_neighbor_list[aug_neighbor_index];
+                out_file << " " << aug_neighbor_list[aug_neighbor_index++];
             }
         }
 
@@ -179,7 +225,7 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
 }
 
 int main() {
-    vector<double> test_vec = tuple_to_vector_of_double("(10.4, 67.3543, 1935");
+    vector<double> test_vec = tuple_to_vector_of_double("(10.4, 67.3543, 1935)");
 
     vector<double> vec1 = {0.333333333333333333, 0.2, 0.4};
     vector<double> vec2 = {0.333333333333333, 0.2, 0.4};

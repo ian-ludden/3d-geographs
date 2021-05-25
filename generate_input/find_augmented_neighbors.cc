@@ -68,7 +68,9 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     // Number of neighbors for each cell, indexed by ID
     // int neighbor_count[total_particles];
 
-    // Lists of neighbors (by ID) for each cell, indexed by ID
+    // Lists of neighbors IDs for each cell. 
+    // Neighbors of cell with ID = id should be listed at 
+    // neighbors[id_to_index[id]].
     vector<vector<int>> neighbors;
     neighbors.reserve(total_particles);
 
@@ -92,41 +94,46 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     int index = 0;
 
     while (in_file >> row) {
+        // Read ID and update index <-> ID maps
         int id = stoi(row[0]);
         id_to_index[id] = index;
         index_to_id.push_back(id);
+
+        // Read neighbor count and neighbors (space-delimited list)
         int neighbor_count = stoi(row[1]);
+        string neighbors_line = row[2];
+
+        // Parse neighbor list into vector<int>
+        size_t left_pos = 0;
+        size_t right_pos;
+        vector<int> neighbor_list;
+        neighbor_list.reserve(neighbor_count);
+
+        for (size_t i_neighbor = 0; i_neighbor < neighbor_count; ++i_neighbor) {
+            right_pos = neighbors_line.find(' ', left_pos);
+            if (right_pos > neighbors_line.length()) right_pos = neighbors_line.length(); // Handle last entry in list
+
+            int neighbor_id = stoi(neighbors_line.substr(left_pos, right_pos));
+            if (neighbor_id < 0) neighbor_id = -1; // Rename any walls (integers from -6 to -1) to -1
+            neighbor_list.push_back(neighbor_id);
+            
+            left_pos = right_pos + 1;
+        }
+
+        // Save neighbor list
+        neighbors.push_back(neighbor_list);
+
+        // Read and store faces string, but replace commas in tuples with spaces
         string faces_string = row[3];
         std::replace(faces_string.begin(), faces_string.end(), ',', ' ');
         faces.push_back(faces_string);
 
-        string neighbors_line = row[2];
-        size_t pos = 0;
-        size_t prev_pos = -1;
-        vector<int> neighbor_list;
-        neighbor_list.reserve(neighbor_count);
-        while ((pos = neighbors_line.find(' ', pos)) != string::npos) {
-            int neighbor_id = stoi(neighbors_line.substr(prev_pos + 1, pos));
-            if (neighbor_id < 0) neighbor_id = -1; // Collapse all walls to -1
-            neighbor_list.push_back(neighbor_id);
-            prev_pos = pos;
-            ++pos;
-        }
-        // Catch last neighbor in space-separated list
-        int neighbor_id = stoi(neighbors_line.substr(prev_pos + 1, neighbors_line.length() - prev_pos));
-        if (neighbor_id < 0) neighbor_id = -1; // Collapse all walls to -1
-        neighbor_list.push_back(neighbor_id);
-        neighbors.push_back(neighbor_list);
-        
-        // Index the (unique) vertices, checking for duplicates. 
-        // Takes O(V^2) time, added over all iterations of while loop, 
-        // where V is the number of vertices. 
+        // Parse and index the (unique) vertices, checking for duplicates. 
         string vertices_string = (string) row[4];
-
         vector<size_t> vertex_indices_vec;
 
-        size_t left_pos = vertices_string.find('('); 
-        size_t right_pos;
+        // Reuse left_pos and right_pos for parsing vertices
+        left_pos = vertices_string.find('(');
         while (left_pos < vertices_string.length()) {
             right_pos = vertices_string.find(')', left_pos);
             
@@ -145,23 +152,20 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
                 }
             }
             vertex_indices_vec.push_back(v_index);
-
-            if (is_new) {
-                vertices.push_back(cell_vertex);
-            }
-
+            if (is_new) vertices.push_back(cell_vertex);
             left_pos = vertices_string.find('(', right_pos);
         }
 
         vertex_indices.push_back(vertex_indices_vec);
 
-        // Use vertices to find augmented neighbors
-        // Loop over all previous cells, then all pairs of vertices from this cell and previous
+        // Use vertices to find augmented neighbors.
+        // Loop over all other (previous) cells, then 
+        // loop over all pairs of vertices from this cell and other.
         vector<int> aug_neighbors_of_current;
         for (int other_index = 0; other_index < index; ++other_index) {
             bool is_aug_neighbor = false;
             for (size_t i = 0; i < vertex_indices[index].size(); ++i) {
-                for (size_t j = 0; j < vertex_indices[j].size(); ++j) {
+                for (size_t j = 0; j < vertex_indices[other_index].size(); ++j) {
                     is_aug_neighbor = is_aug_neighbor || (vertex_indices[index][i] == vertex_indices[other_index][j]);
                 }
             }
@@ -187,11 +191,11 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     int id = 0;
     while (id < total_particles) {
         int cell_index = id_to_index[id];
-        out_file << cell_index << ",";
+        out_file << id << ",";
         
         vector<int> neighbor_list = neighbors[cell_index];
-        std::vector<int>::size_type neighbor_index = 0;
-        // Print first neighbor first to avoid extra space
+        vector<int>::size_type neighbor_index = 0;
+        // Print first neighbor first to avoid extra space (every cell has at least one neighbor)
         out_file << neighbor_list[neighbor_index++];
         while (neighbor_index < neighbor_list.size()) {
             out_file << " " << neighbor_list[neighbor_index++];
@@ -201,7 +205,7 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         
         // Write list of (additional) augmented neighbors
         vector<int> aug_neighbor_list = aug_neighbors[cell_index];
-        std::vector<int>::size_type aug_neighbor_index = 0;
+        vector<int>::size_type aug_neighbor_index = 0;
 
         if (!aug_neighbor_list.empty()) {
             // Print first aug neighbor before loop to avoid extra space

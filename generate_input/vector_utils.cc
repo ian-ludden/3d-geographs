@@ -66,18 +66,3 @@ vector<double> tuple_to_vector_of_double(const string tuple) {
 
     return vec;
 }
-
-// int main() {
-//     string tuple = "   (2, 3, 5 , 7    )";
-//     vector<int> vec_int = tuple_to_vector_of_int(tuple);
-
-//     for (size_t i = 0; i < vec_int.size(); ++i) {
-//         cout << "vec_int[" << i << "] = " << vec_int[i] << "\n";
-//     }
-
-//     cout << "Press ENTER to exit. ";
-//     string input;
-//     std::cin >> input;
-
-//     return 0;
-// }

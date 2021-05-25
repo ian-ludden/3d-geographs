@@ -51,8 +51,8 @@ int main() {
 	con.draw_cells_pov("uniform_grid_v.pov");
 
     // Print column headers of CSV output file
-    const char * full_output_fname = "uniform_grid_output_full.csv";
-    FILE * fp = safe_fopen(full_output_fname, "w");
+    const char * output_fname = "uniform_grid_output.csv";
+    FILE * fp = safe_fopen(output_fname, "w");
     fprintf(fp, "%d\n", index); // Print number of cells on a line by itself
     fprintf(fp, "ID,No. Neighbors,Neighbors,Faces,Vertices\n");
     // Output Voronoi cells with neighbor info. 

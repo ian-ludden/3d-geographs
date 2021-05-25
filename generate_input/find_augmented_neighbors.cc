@@ -6,6 +6,7 @@
 #include "vector_utils.hh"
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <algorithm>
 using std::cout;
 using std::string;
@@ -54,7 +55,6 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
 
     in_file >> row; // Read first line with number of cells
     total_particles = stoi(row[0]);
-    cout << "There are " << total_particles << " cells.\n";
     
     // Cell IDs (integers from 0 to total_particles - 1, inclusive)
     // mapped to indices for other vectors
@@ -109,7 +109,7 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         vector<int> neighbor_list;
         neighbor_list.reserve(neighbor_count);
 
-        for (size_t i_neighbor = 0; i_neighbor < neighbor_count; ++i_neighbor) {
+        for (int i_neighbor = 0; i_neighbor < neighbor_count; ++i_neighbor) {
             right_pos = neighbors_line.find(' ', left_pos);
             if (right_pos > neighbors_line.length()) right_pos = neighbors_line.length(); // Handle last entry in list
 
@@ -228,19 +228,19 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     out_file.close();
 }
 
-int main() {
-    vector<double> test_vec = tuple_to_vector_of_double("(10.4, 67.3543, 1935)");
+int main(int argc, char *argv[]) {
+    string in_filename;
+    string out_filename;
 
-    vector<double> vec1 = {0.333333333333333333, 0.2, 0.4};
-    vector<double> vec2 = {0.333333333333333, 0.2, 0.4};
-    if (is_same_vertex(vec1, vec2, VERTEX_TOLERANCE)) {
-        cout << "vec1 and vec2 are the same\n";
+    if (argc >= 3) {
+        in_filename = argv[1];
+        out_filename = argv[2];
     } else {
-        cout << "vec1 and vec2 are different.\n";
+        string prog_name = argv[0];
+        if (prog_name.empty()) prog_name = "<program name>";
+        cout << "Usage: " << prog_name << " <input_filename> <output_filename>\n";
+        return 0;
     }
 
-    std::string in_filename = "uniform_grid_output_full.csv";
-    std::string out_filename = "uniform_grid_output_aug_neighbors.csv";
-    
     convert_output_csv(in_filename, out_filename);
 }

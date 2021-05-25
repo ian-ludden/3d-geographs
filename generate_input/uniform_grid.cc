@@ -51,11 +51,13 @@ int main() {
 	con.draw_cells_pov("uniform_grid_v.pov");
 
     // Print column headers of CSV output file
-    FILE * fp = safe_fopen("uniform_grid_output.csv", "w");
-    fprintf(fp, "ID,Coordinates,No. Neighbors,Neighbors,Face Vertices\n");
+    const char * output_fname = "uniform_grid_output.csv";
+    FILE * fp = safe_fopen(output_fname, "w");
+    fprintf(fp, "%d\n", index); // Print number of cells on a line by itself
+    fprintf(fp, "ID,No. Neighbors,Neighbors,Faces,Vertices\n");
     // Output Voronoi cells with neighbor info. 
     // See http://math.lbl.gov/voro++/doc/voro++_overview.pdf, 
     // Section 6, to interpret format string. 
-    con.print_custom("%i,%q,%s,%n,%t", fp);
+    con.print_custom("%i,%s,%n,%t,%P", fp);
     fclose(fp);
 }

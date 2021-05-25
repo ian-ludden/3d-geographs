@@ -15,7 +15,7 @@ const int z_max = 10;
 const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
 // Define number of seed points (particles)
-const int num_particles = 20;
+const int num_particles = 100;
 
 // Define parameters for container blocks
 const int blocks_x = 5, blocks_y = 5, blocks_z = 5;
@@ -57,11 +57,13 @@ int main() {
 	con.draw_cells_pov("random_points_box_v.pov");
 
     // Print column headers of CSV output file
-    FILE * fp = safe_fopen("random_points_box_output.csv", "w");
-    fprintf(fp, "ID,Coordinates,No. Neighbors,Neighbors,Face Vertices,Vertices Absolute Coords\n");
+    const char * output_fname = "random_points_box_output.csv";
+    FILE * fp = safe_fopen(output_fname, "w");
+    fprintf(fp, "%d\n", index); // Print number of cells on a line by itself
+    fprintf(fp, "ID,No. Neighbors,Neighbors,Faces,Vertices\n");
     // Output Voronoi cells with neighbor info. 
     // See http://math.lbl.gov/voro++/doc/voro++_overview.pdf, 
     // Section 6, to interpret format string. 
-    con.print_custom("%i,%q,%s,%n,%t,%P", fp);
+    con.print_custom("%i,%s,%n,%t,%P", fp);
     fclose(fp);
 }

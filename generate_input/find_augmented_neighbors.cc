@@ -42,11 +42,6 @@ bool is_same_vertex(vector<double> v1, vector<double> v2, const double tol) {
     return true;
 }
 
-std::istream & operator>>(std::istream & str, csv_row & data) {
-    data.read_next_row(str);
-    return str;
-}
-
 void convert_output_csv(std::string in_filename, std::string out_filename) {
     csv_row row;
     int total_particles;

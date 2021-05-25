@@ -14,6 +14,16 @@ namespace gg3d {
 
 struct Edge;
 
+/** Default constructor for static graph. 
+ * Builds an empty graph. 
+ */
+static_graph::static_graph() {
+    vector<Edge> edges;
+    edges.resize(1);
+    int number_of_vertices = 0;
+    static_graph::static_graph(edges, number_of_vertices);
+};
+
 /** Constructor for static graph. 
  * Builds graph from list of edges and number of vertices. 
  * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
@@ -111,81 +121,81 @@ std::string int_vector_to_string(const vector<int> &vector_of_ints) {
     return ss.str();
 };
 
-/**
- * Test static_graph class on dual graph of cube surface
- * */
-int main() {
-    const vector<gg3d::Edge> edges({
-        {0, 1}, {0, 2}, {0, 3}, {0, 4}, 
-        {1, 5}, {2, 5}, {3, 5}, {4, 5},
-        {1, 2}, {2, 3}, {3, 4}, {1, 4}
-    });
+// /**
+//  * Test static_graph class on dual graph of cube surface
+//  * */
+// int main() {
+//     const vector<gg3d::Edge> edges({
+//         {0, 1}, {0, 2}, {0, 3}, {0, 4}, 
+//         {1, 5}, {2, 5}, {3, 5}, {4, 5},
+//         {1, 2}, {2, 3}, {3, 4}, {1, 4}
+//     });
 
-    int sides_of_cube = 6;
-    vector<string> face_names = {"bottom", "left", "back", "right", "front", "top"};
+//     int sides_of_cube = 6;
+//     vector<string> face_names = {"bottom", "left", "back", "right", "front", "top"};
 
-    gg3d::static_graph graph = gg3d::static_graph(edges, sides_of_cube, face_names);
+//     gg3d::static_graph graph = gg3d::static_graph(edges, sides_of_cube, face_names);
 
-    for (int i = 0; i < sides_of_cube; ++i) {
-        cout << "i = " << i << "\n";
+//     for (int i = 0; i < sides_of_cube; ++i) {
+//         cout << "i = " << i << "\n";
 
-        int n_neighbors = graph.adjacency_list[i].size();
-        cout << "\tNo. neighbors: " << n_neighbors << "\n\tNeighbor names: ";
+//         int n_neighbors = graph.adjacency_list[i].size();
+//         cout << "\tNo. neighbors: " << n_neighbors << "\n\tNeighbor names: ";
 
-        for (int j = 0; j < n_neighbors; j++) {
-            cout << graph.vertex_name[graph.adjacency_list[i][j]] << " ";
-        }
-        cout << "\n\tNeighbor indices: ";
+//         for (int j = 0; j < n_neighbors; j++) {
+//             cout << graph.vertex_name[graph.adjacency_list[i][j]] << " ";
+//         }
+//         cout << "\n\tNeighbor indices: ";
         
-        for (int j = 0; j < n_neighbors; j++) {
-            cout << graph.adjacency_list[i][j] << " ";
-        }
-        cout << "\n";
-    }
+//         for (int j = 0; j < n_neighbors; j++) {
+//             cout << graph.adjacency_list[i][j] << " ";
+//         }
+//         cout << "\n";
+//     }
 
-    cout << "\n";
+//     cout << "\n";
 
-    cout << "CHECK INDUCED SUBGRAPHS\n\n";
-    // Test is_connected_subgraph on several vertex subsets
-    vector<vector<int>> vertex_subsets = {
-        {0, 1, 2}, {0, 3, 4, 5}, {1, 2, 3, 4}, {0, 1, 2, 3, 4, 5}, // Should all give 'true'
-        {}, {0, 5}, {1, 3}, {2, 4} // Should all give 'false'
-    };
+//     cout << "CHECK INDUCED SUBGRAPHS\n\n";
+//     // Test is_connected_subgraph on several vertex subsets
+//     vector<vector<int>> vertex_subsets = {
+//         {0, 1, 2}, {0, 3, 4, 5}, {1, 2, 3, 4}, {0, 1, 2, 3, 4, 5}, // Should all give 'true'
+//         {}, {0, 5}, {1, 3}, {2, 4} // Should all give 'false'
+//     };
 
-    for (int subset_index = 0; subset_index < vertex_subsets.size(); subset_index++) {
-        cout << "It is "; 
-        if (graph.is_connected_subgraph(vertex_subsets[subset_index])) {
-            cout << "true";
-        } else {
-            cout << "false";
-        } 
-        cout << " that the subgraph induced by "; 
-        cout << int_vector_to_string(vertex_subsets[subset_index]);
-        cout << " is connected.\n\n";
-    }
+//     for (int subset_index = 0; subset_index < vertex_subsets.size(); subset_index++) {
+//         cout << "It is "; 
+//         if (graph.is_connected_subgraph(vertex_subsets[subset_index])) {
+//             cout << "true";
+//         } else {
+//             cout << "false";
+//         } 
+//         cout << " that the subgraph induced by "; 
+//         cout << int_vector_to_string(vertex_subsets[subset_index]);
+//         cout << " is connected.\n\n";
+//     }
 
-    cout << "CHECK COMPLEMENTS\n\n";
+//     cout << "CHECK COMPLEMENTS\n\n";
 
-    // Test whether the complements of vertex_subsets 
-    // induce connected subgraphs. 
-    vector<int> vertex_indices(graph.size);
-    for (int i = 0; i < graph.size; ++i) vertex_indices.push_back(i); 
+//     // Test whether the complements of vertex_subsets 
+//     // induce connected subgraphs. 
+//     vector<int> vertex_indices(graph.size);
+//     for (int i = 0; i < graph.size; ++i) vertex_indices.push_back(i); 
 
-    for (int subset_index = 0; subset_index < vertex_subsets.size(); subset_index++) {
-        vector<int> complement; 
-        for (int i = 0; i < graph.size; ++i) {
-            vector<int>::iterator it = find(vertex_subsets[subset_index].begin(), vertex_subsets[subset_index].end(), i);
-            if (it == vertex_subsets[subset_index].end()) complement.push_back(i);
-        }
+//     for (int subset_index = 0; subset_index < vertex_subsets.size(); subset_index++) {
+//         vector<int> complement; 
+//         for (int i = 0; i < graph.size; ++i) {
+//             vector<int>::iterator it = find(vertex_subsets[subset_index].begin(), vertex_subsets[subset_index].end(), i);
+//             if (it == vertex_subsets[subset_index].end()) complement.push_back(i);
+//         }
 
-        cout << "It is "; 
-        if (graph.is_connected_subgraph(complement)) {
-            cout << "true";
-        } else {
-            cout << "false";
-        } 
-        cout << " that the subgraph induced by "; 
-        cout << int_vector_to_string(complement);
-        cout << " is connected.\n\n";
-    }
-}
+//         cout << "It is "; 
+//         if (graph.is_connected_subgraph(complement)) {
+//             cout << "true";
+//         } else {
+//             cout << "false";
+//         } 
+//         cout << " that the subgraph induced by "; 
+//         cout << int_vector_to_string(complement);
+//         cout << " is connected.\n\n";
+//     }
+// }

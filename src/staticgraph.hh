@@ -23,6 +23,8 @@ public:
     /** List of vertex names, indexed by ID */
     std::vector<std::string> vertex_name;
 
+    static_graph();
+
     /** Constructor for static graph. 
      * Builds graph from list of edges and number of vertices. 
      * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.

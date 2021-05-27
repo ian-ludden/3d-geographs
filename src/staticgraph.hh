@@ -23,6 +23,9 @@ public:
     /** List of vertex names, indexed by ID */
     std::vector<std::string> vertex_name;
 
+    /**
+     * Default constructor; creates empty graph (size = 0).
+     */
     static_graph();
 
     /** Constructor for static graph. 
@@ -47,6 +50,22 @@ public:
      * \param[in] (vertices) pointer to vector of vertex indices (not their string names)
      * */
     bool is_connected_subgraph(std::vector<int> &vertices);
+
+private:
+    /**
+     * Builds adjacency list from edges (vector<Edge>). 
+     * 
+     * \param[in] (edge) a vector<Edge> containing all edges
+     */
+    void build_adjacency_lists(const std::vector<Edge> &edges) {
+        adjacency_list.resize(size, {}); // Initialize all lists empty
+
+        // For each edge, add src/dest to each other's adj lists
+        for (auto &edge: edges) {
+            adjacency_list[edge.src].push_back(edge.dest);
+            adjacency_list[edge.dest].push_back(edge.src);
+        }
+    }
 };
     
 }

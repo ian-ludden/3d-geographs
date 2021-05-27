@@ -22,7 +22,9 @@ class geograph3d {
 public:
     /** Number of cells */
     int N;
-    /** A map of cell IDs to part assignments */
+    /** Number of parts */
+    const int K;
+    /** A map of cell IDs to part assignments, indexed 1 to K */
     vector<int> assignment;
     /** 
      * The undirected graph of cells with 2-D face adjacencies, 
@@ -35,7 +37,7 @@ public:
     /** The induced subgraphs of the cells' augmented neighborhoods, indexed by cell ID */
     vector<static_graph> aug_neighbor_graph;
 
-    geograph3d(const string in_filename);
+    geograph3d(const string in_filename, const int num_parts);
 };
 }
 

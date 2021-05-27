@@ -60,9 +60,6 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     vector<int> index_to_id;
     index_to_id.reserve(total_particles);
 
-    // Number of neighbors for each cell, indexed by ID
-    // int neighbor_count[total_particles];
-
     // Lists of neighbors IDs for each cell. 
     // Neighbors of cell with ID = id should be listed at 
     // neighbors[id_to_index[id]].
@@ -94,26 +91,12 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         id_to_index[id] = index;
         index_to_id.push_back(id);
 
-        // Read neighbor count and neighbors (space-delimited list)
-        int neighbor_count = stoi(row[1]);
+        // Read neighbors (space-delimited list)
+        // int neighbor_count = stoi(row[1]); // No need to read number of neighbors
         string neighbors_line = row[2];
 
-        // Parse neighbor list into vector<int>
-        size_t left_pos = 0;
-        size_t right_pos;
-        vector<int> neighbor_list;
-        neighbor_list.reserve(neighbor_count);
-
-        for (int i_neighbor = 0; i_neighbor < neighbor_count; ++i_neighbor) {
-            right_pos = neighbors_line.find(' ', left_pos);
-            if (right_pos > neighbors_line.length()) right_pos = neighbors_line.length(); // Handle last entry in list
-
-            int neighbor_id = stoi(neighbors_line.substr(left_pos, right_pos));
-            if (neighbor_id < 0) neighbor_id = -1; // Rename any walls (integers from -6 to -1) to -1
-            neighbor_list.push_back(neighbor_id);
-            
-            left_pos = right_pos + 1;
-        }
+        // Parse neighbor list
+        vector<int> neighbor_list = delimited_list_to_vector_of_int(neighbors_line, ' ');
 
         // Save neighbor list
         neighbors.push_back(neighbor_list);
@@ -127,7 +110,8 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         string vertices_string = (string) row[4];
         vector<size_t> vertex_indices_vec;
 
-        // Reuse left_pos and right_pos for parsing vertices
+        // Parse vertices
+        size_t left_pos, right_pos;
         left_pos = vertices_string.find('(');
         while (left_pos < vertices_string.length()) {
             right_pos = vertices_string.find(')', left_pos);

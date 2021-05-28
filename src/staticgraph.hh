@@ -51,6 +51,16 @@ public:
      * */
     bool is_connected_subgraph(std::vector<int> &vertices);
 
+    /**
+     * Builds and returns a static_graph object representing
+     * the induced subgraph of the given set of vertices. 
+     * 
+     * \param[in] (vertex_names) vector<string> of vertex names
+     *                           to include in induced subgraph
+     * \return the new static_graph object representing the induced subgraph
+     */
+    static_graph induced_subgraph(std::vector<std::string> &vertex_names);
+
 private:
     /**
      * Builds adjacency list from edges (vector<Edge>). 

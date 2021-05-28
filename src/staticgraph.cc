@@ -104,6 +104,35 @@ string int_vector_to_string(const vector<int> &vector_of_ints) {
     return ss.str();
 }
 
+gg3d::static_graph gg3d::static_graph::induced_subgraph(vector<string> &vertex_names) {
+    vector<gg3d::Edge> edges;
+    
+    vector<size_t> indices;
+    for (auto & name : vertex_names) {
+        vector<string>::iterator it = find(vertex_name.begin(), vertex_name.end(), name);
+        if (it == vertex_name.end()) throw std::invalid_argument("Error in static_graph::induced_subgraph(): Vertex \"" + name + "\" not found.");
+        indices.push_back(it - vertex_name.begin());
+    }
+
+    // Find edges to add from adjacency lists of vertices in induced subgraph
+    for (size_t i = 0; i < indices.size(); ++i) {
+        // i is the new index, indices[i] is the old index
+        vector<int> adj_list_i = adjacency_list[indices[i]];
+        for (auto & j_id_old : adj_list_i) {
+            // Check whether j_id_old is a vertex in the induced subgraph. 
+            // If so, determine its new id, and add the edge from i to j.
+            vector<size_t>::iterator it = find(indices.begin(), indices.end(), j_id_old);
+            if (it != indices.end()) {
+                int j_id_new = it - indices.begin();
+                gg3d::Edge edge = {(int) i, j_id_new};
+                edges.push_back(edge);
+            }
+        }
+    }
+
+    return gg3d::static_graph(edges, (int) vertex_names.size(), vertex_names);
+}
+
 // /**
 //  * Test static_graph class on dual graph of cube surface
 //  * */

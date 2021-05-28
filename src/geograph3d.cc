@@ -28,6 +28,7 @@ namespace gg3d {
  * 
  * \param[in] (in_filename) String name of the input CSV file, 
  *                          such as that produced by find_augmented_neighbors.
+ *                          NB: This constructor assumes rows are sorted by cell ID, ascending. 
  * \param[in] (num_parts) The number of parts in the partition (stored as K). 
  * */
 geograph3d::geograph3d(const string in_filename, const int num_parts) 
@@ -119,21 +120,20 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
                                surface_dual_vertex_names));
     }
 
-    // TODO: 
-    // Need to remember correspondence between 
-    // faces and neighbors for the purpose of determining 
-    // vertex subset(s) in surface dual that need to be checked 
-    // for connectedness. 
-    // Maybe create a surface_dual_graph class that extends static_graph 
-    // and adds this information?
-    // Or just use static_graph class, but vertex names are the IDs 
-    // of the neighboring cells corresponding to the faces? 
+    // Construct augmented neighborhood induced subgraphs
+    for (int cell_id = 0; cell_id < N; ++cell_id) {
+        vector<int> all_aug_neighbors(neighbors[cell_id]);
+        for (auto & aug_neighbor : aug_neighbors[cell_id]) all_aug_neighbors.push_back(aug_neighbor);
 
-    // TODO: 
-    // Need to remember IDs of cells corresponding to vertices in induced subgraph
-    // of augmented neighborhood. 
-    // Could either create an induced subgraph function in static_graph class 
-    // or do something here as pre-processing. 
+        // Convert augmented neighbor IDs to names
+        vector<string> all_aug_neighbor_names = {};
+        for (auto & aug_neighbor_id : all_aug_neighbors) {
+            if (aug_neighbor_id < 0) continue; // Ignore walls (negative IDs)
+            all_aug_neighbor_names.push_back(g.vertex_name[aug_neighbor_id]);
+        }
+
+        aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
+    }
 }
 }
 
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
     size_t count_g_edges = 0;
     for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n";
+    cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
     // Spot-check surface dual graphs
     int cell_id = 0;
@@ -182,8 +182,25 @@ int main(int argc, char *argv[]) {
     for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
     cout << "\n\n";
 
+    // Spot-check induced augmented neighborhood subgraphs
+    cell_id = 0;
+    cout << "The augmented neighborhood induced subgraph for cell " << cell_id;
+    cout << " has " << geograph.aug_neighbor_graph[cell_id].size << " vertices and ";
+    count_edges = 0;
+    for (auto & adj_list : geograph.aug_neighbor_graph[cell_id].adjacency_list) count_edges += adj_list.size();
+    count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+    cout << count_edges << " edges.\n";
+    cout << "The names of the vertices of the augmented neighborhood induced subgraph for cell " << cell_id << " are";
+    for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+    cout << "\n\n";
+
+    cell_id = 111;
+    cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+    for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+    cout << "\n\n";
+
     cout << "All done. Type anything and press ENTER to close.\n";
     string temp;
     std::cin >> temp;
-    cout << "temp is " << temp << "\n";
+    cout << temp << "\n";
 }

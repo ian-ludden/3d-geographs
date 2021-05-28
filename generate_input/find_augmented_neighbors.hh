@@ -73,4 +73,9 @@ public:
     };
 };
 
+std::istream & operator>>(std::istream & str, csv_row & data) {
+    data.read_next_row(str);
+    return str;
+}
+
 #endif /** FIND_AUGMENTED_NEIGHBORS_HH */

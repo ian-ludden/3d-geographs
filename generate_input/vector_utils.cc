@@ -66,3 +66,54 @@ vector<double> tuple_to_vector_of_double(const string tuple) {
 
     return vec;
 }
+
+vector<int> delimited_list_to_vector_of_int(const string list, const char delim) {
+    int num_entries = 1;
+    for (size_t i = 0; i < list.length(); ++i) {
+        if (delim == list[i]) num_entries++;
+    }
+    
+    vector<int> vec;
+    vec.reserve(num_entries);
+
+    size_t left_pos = 0;
+    size_t right_pos;
+
+    for (int i = 0; i < num_entries; ++i) {
+        right_pos = list.find(delim, left_pos);
+        if (right_pos > list.length()) right_pos = list.length(); // Handle last entry in list
+
+        int entry = stoi(list.substr(left_pos, right_pos - left_pos)); // Substring excludes character at index right_pos
+        vec.push_back(entry);
+        
+        left_pos = right_pos + 1;
+    }
+
+    return vec;
+}
+
+vector<string> delimited_tuples_to_vector_of_string(const string list) {
+    // Determine number of entries (tuples) by counting right parentheses
+    int num_entries = 0;
+    for (size_t i = 0; i < list.length(); ++i) {
+        if (')' == list[i]) num_entries++;
+    }
+
+    vector<string> vec;
+    vec.reserve(num_entries);
+
+    size_t left_pos = 0;
+    size_t right_pos;
+
+    for (int i = 0; i < num_entries; ++i) {
+        right_pos = list.find(')', left_pos);
+        if (right_pos > list.length()) right_pos = list.length() - 1;
+        
+        string entry = list.substr(left_pos, right_pos - left_pos + 1); // Substring *includes* character at index right_pos
+        vec.push_back(entry);
+
+        left_pos = right_pos + 2; // Move from ')' to next '(', skipping delimiter (space character) in between
+    }
+
+    return vec;
+}

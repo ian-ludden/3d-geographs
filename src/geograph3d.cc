@@ -138,12 +138,6 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 }
 
 int main(int argc, char *argv[]) {
-    // // Test counting bits of uint64_t
-    // uint64_t test = 0x0f0b000000000316;
-    // size_t count = std::bitset<64>{test}.count();
-    // cout << count << "\n"; // should be 4+3+2+1+2 = 12
-    // cout << "all done\n";
-
     string in_filename;
     int K;
     
@@ -158,6 +152,10 @@ int main(int argc, char *argv[]) {
     }
 
     gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
+
+    // Summarize geo-graph
+    cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
+    cout << "partitioned into " << geograph.num_parts() << " parts.\n";
 
     // Summarize cell adjacency graph
     size_t count_g_edges = 0;

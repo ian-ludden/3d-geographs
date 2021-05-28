@@ -135,6 +135,47 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
         aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
     }
 }
+
+bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
+    // Start by checking conditions (2) and (3), since expected to be faster.
+    // TODO: Somehow keep track of *which* conditions fail over random iterations 
+    //       and possibly use results to decide what order to check conditions. 
+    
+    // Condition (2): Surface dual graph w.r.t. old part
+    vector<int> neighbors = g.adjacency_list[cell_id];
+    vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
+    for (auto & neighbor : neighbors) { // TODO: will this loop with a find operation inside it cause an asymptotic slow-down? 
+        int neighbor_part = assignment[neighbor];
+        if (neighbor_part != assignment[cell_id]) continue;
+        string neighbor_name = g.vertex_name[neighbor];
+        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
+        if (it != surface_dual[cell_id].vertex_name.end()) {
+            int old_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
+            old_part_face_ids.push_back(old_part_neighbor_id);
+        }
+    }
+
+    vector<int> complement_face_ids;
+    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
+        vector<int>::iterator it = find(old_part_face_ids.begin(), old_part_face_ids.end(), face_id);
+        if (it == old_part_face_ids.end()) complement_face_ids.push_back(face_id);
+    }
+
+    if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
+        || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
+        return false;
+    }
+    
+    // Condition (3): Surface dual graph w.r.t. new part
+    // TODO: Repeat condition (2) code, 
+    //       but substitute "new_part" for "assignment[cell_id]" 
+    //       and change names of variables accordingly.
+
+    // Condition (1): Induced subgraph condition
+    
+    return true;
+}
+
 }
 
 int main(int argc, char *argv[]) {

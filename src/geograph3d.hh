@@ -57,6 +57,17 @@ public:
     geograph3d(const string in_filename, const int num_parts);
 
     /**
+     * Checks whether flipping a cell to a new part maintains spherical zones (parts). 
+     * If the flip is valid, it is made. 
+     * 
+     * \param[in] (cell_id) The ID of the cell to be flipped
+     * \param[in] (new_part) The part to which cell_id will be moved. 
+     *                       Enforced to be between 1 and K, inclusive; 
+     *                       otherwise, throws an invalid_argument exception.
+     */
+    bool attempt_flip(int &cell_id, int &new_part);
+
+    /**
      * Setter for assignment member variable. 
      * 
      * \param[in] (assignment) New assignments, as a vector of part IDs (1 to K) 

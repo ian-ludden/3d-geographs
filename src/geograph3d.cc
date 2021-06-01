@@ -49,7 +49,8 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 
     vector<vector<int>> neighbors; // List of lists of neighbor IDs; primary index is cell ID
     vector<vector<int>> aug_neighbors; // List of lists of augmented neighbor (but not neighbor) IDs; primary index is cell ID
-    vector<vector<uint64_t>> faces; // List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. NB: Breaks if any cell has more than 64 vertices.
+    vector<vector<uint64_t>> faces; // List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
+                                    // NB: Breaks if any cell has more than 64 vertices. 
 
     neighbors.reserve(N);
     aug_neighbors.reserve(N);
@@ -145,6 +146,7 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     vector<int> neighbors = g.adjacency_list[cell_id];
     vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
     for (auto & neighbor : neighbors) { // TODO: will this loop with a find operation inside it cause an asymptotic slow-down? 
+        // TODO: switch to looping over INDICES in surface dual graph, and then can use vertex_name index to get cell ids
         int neighbor_part = assignment[neighbor];
         if (neighbor_part != assignment[cell_id]) continue;
         string neighbor_name = g.vertex_name[neighbor];
@@ -165,15 +167,42 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
         return false;
     }
-    
+
     // Condition (3): Surface dual graph w.r.t. new part
-    // TODO: Repeat condition (2) code, 
-    //       but substitute "new_part" for "assignment[cell_id]" 
-    //       and change names of variables accordingly.
+    vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
+    for (auto & neighbor : neighbors) {
+        int neighbor_part = assignment[neighbor];
+        if (neighbor_part != new_part) continue;
+        string neighbor_name = g.vertex_name[neighbor];
+        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
+        if (it != surface_dual[cell_id].vertex_name.end()) {
+            int new_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
+            new_part_face_ids.push_back(new_part_neighbor_id);
+        }
+    }
+
+    complement_face_ids.clear();
+    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
+        vector<int>::iterator it = find(new_part_face_ids.begin(), new_part_face_ids.end(), face_id);
+        if (it == new_part_face_ids.end()) complement_face_ids.push_back(face_id);
+    }
+
+    if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
+        || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
+        return false;
+    }
 
     // Condition (1): Induced subgraph condition
-    
-    return true;
+    static_graph subgraph = aug_neighbor_graph[cell_id];
+    vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
+    for (int i = 0; i < subgraph.size; ++i) {
+        int vertex_id = stoi(subgraph.vertex_name[i]);
+        if (assignment[vertex_id] == assignment[cell_id]) {
+            old_part_neighbor_new_ids.push_back(i);
+        }
+    }
+
+    return subgraph.is_connected_subgraph(old_part_neighbor_new_ids); // Last condition, so just return its value
 }
 
 }

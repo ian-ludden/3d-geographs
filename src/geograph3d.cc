@@ -2,7 +2,7 @@
  * \file geograph3d.cc
  * \brief Implementation of the 3-D geo-graph. */
 #include "geograph3d.hh"
-#include "staticgraph.hh"
+#include "static_graph.hh"
 #include "../generate_input/find_augmented_neighbors.hh"
 #include "../generate_input/vector_utils.hh"
 #include <bitset>
@@ -143,24 +143,22 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     //       and possibly use results to decide what order to check conditions. 
     
     // Condition (2): Surface dual graph w.r.t. old part
-    vector<int> neighbors = g.adjacency_list[cell_id];
+    // vector<int> neighbors = g.adjacency_list[cell_id];
     vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
-    for (auto & neighbor : neighbors) { // TODO: will this loop with a find operation inside it cause an asymptotic slow-down? 
-        // TODO: switch to looping over INDICES in surface dual graph, and then can use vertex_name index to get cell ids
-        int neighbor_part = assignment[neighbor];
-        if (neighbor_part != assignment[cell_id]) continue;
-        string neighbor_name = g.vertex_name[neighbor];
-        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
-        if (it != surface_dual[cell_id].vertex_name.end()) {
-            int old_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
-            old_part_face_ids.push_back(old_part_neighbor_id);
+    vector<bool> is_face_in_old_part; // Indicators of whether each face is adjacent to the old part
+    is_face_in_old_part.resize(surface_dual[cell_id].size, false);
+
+    for (int i = 0; i < surface_dual[cell_id].size; ++i) {
+        string neighbor_name = surface_dual[cell_id].vertex_name[i];
+        if (assignment[stoi(neighbor_name)] == assignment[cell_id]) {
+            is_face_in_old_part[i] = true;
+            old_part_face_ids.push_back(i);
         }
     }
 
     vector<int> complement_face_ids;
     for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-        vector<int>::iterator it = find(old_part_face_ids.begin(), old_part_face_ids.end(), face_id);
-        if (it == old_part_face_ids.end()) complement_face_ids.push_back(face_id);
+        if (!is_face_in_old_part[face_id]) complement_face_ids.push_back(face_id);
     }
 
     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
@@ -169,29 +167,30 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     }
 
     // Condition (3): Surface dual graph w.r.t. new part
-    vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
-    for (auto & neighbor : neighbors) {
-        int neighbor_part = assignment[neighbor];
-        if (neighbor_part != new_part) continue;
-        string neighbor_name = g.vertex_name[neighbor];
-        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
-        if (it != surface_dual[cell_id].vertex_name.end()) {
-            int new_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
-            new_part_face_ids.push_back(new_part_neighbor_id);
+    vector<int> new_part_face_ids; // IDs of faces (vertices in suface dual graph) adjoining new part
+    vector<bool> is_face_in_new_part; // Indicators of whether each face is adjacent to the new part
+    is_face_in_new_part.resize(surface_dual[cell_id].size, false);
+
+    for (int i = 0; i < surface_dual[cell_id].size; ++i) {
+        string neighbor_name = surface_dual[cell_id].vertex_name[i];
+        if (assignment[stoi(neighbor_name)] == new_part) {
+            is_face_in_new_part[i] = true;
+            new_part_face_ids.push_back(i);
         }
     }
 
+    // Build list of complement faces to check complement induced subgraph
     complement_face_ids.clear();
     for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-        vector<int>::iterator it = find(new_part_face_ids.begin(), new_part_face_ids.end(), face_id);
-        if (it == new_part_face_ids.end()) complement_face_ids.push_back(face_id);
+        if (!is_face_in_new_part[face_id]) complement_face_ids.push_back(face_id);
     }
 
-    if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
+    // Verify both surface dual subgraphs, shared and unshared, are connected
+    if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids))
         || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
         return false;
     }
-
+    
     // Condition (1): Induced subgraph condition
     static_graph subgraph = aug_neighbor_graph[cell_id];
     vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
@@ -202,7 +201,9 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         }
     }
 
-    return subgraph.is_connected_subgraph(old_part_neighbor_new_ids); // Last condition, so just return its value
+    bool success = subgraph.is_connected_subgraph(old_part_neighbor_new_ids); // Last condition, so success iff condition is satisfied
+    if (success) assignment[cell_id] = new_part;
+    return success;
 }
 
 }
@@ -267,8 +268,26 @@ int main(int argc, char *argv[]) {
     for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
     cout << "\n\n";
 
-    cout << "All done. Type anything and press ENTER to close.\n";
-    string temp;
-    std::cin >> temp;
-    cout << temp << "\n";
+    // Attempt flips    
+    string response = "Y";
+    while (response == "Y" || response == "y") {
+        cout << "Enter the name of the unit/cell to be flipped: ";
+        string name;
+        std::cin >> name;
+        cell_id = stoi(name);
+        int part = geograph.get_assignment()[cell_id];
+        cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+        cout << "Enter the name of its new part: ";
+        std::cin >> name;
+        int new_part = stoi(name);
+        bool success = geograph.attempt_flip(cell_id, new_part);
+        if (success) {
+            cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
+        } else {
+            cout << "Flip failed.\n";
+        }
+        
+        cout << "Try another flip? (Y/N)";
+        std::cin >> response;
+    }
 }

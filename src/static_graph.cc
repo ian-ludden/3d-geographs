@@ -1,7 +1,7 @@
 /** 
  * \file staticgraph.cc
  * \brief Implementation of a static, undirected graph. */
-#include "staticgraph.hh"
+#include "static_graph.hh"
 #include <algorithm>
 #include <iostream>
 #include <sstream>

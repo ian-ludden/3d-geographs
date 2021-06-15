@@ -2,7 +2,7 @@
  * \file geograph3d.cc
  * \brief Implementation of the 3-D geo-graph. */
 #include "geograph3d.hh"
-#include "staticgraph.hh"
+#include "static_graph.hh"
 #include "../generate_input/find_augmented_neighbors.hh"
 #include "../generate_input/vector_utils.hh"
 #include <bitset>
@@ -186,7 +186,7 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         if (DEBUG) cout << "Failed condition (3).";
         return false;
     }
-
+    
     // Condition (1): Induced subgraph condition
     static_graph subgraph = aug_neighbor_graph[cell_id];
     vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
@@ -201,7 +201,8 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         return false;
     }
 
-    return true; // Passed all three conditions
+    assignment[cell_id] = new_part; // Flip succeeded, so update assignment
+    return true;
 }
 
 }
@@ -266,8 +267,26 @@ int main(int argc, char *argv[]) {
     for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
     cout << "\n\n";
 
-    cout << "All done. Type anything and press ENTER to close.\n";
-    string temp;
-    std::cin >> temp;
-    cout << temp << "\n";
+    // Attempt flips    
+    string response = "Y";
+    while (response == "Y" || response == "y") {
+        cout << "Enter the name of the unit/cell to be flipped: ";
+        string name;
+        std::cin >> name;
+        cell_id = stoi(name);
+        int part = geograph.get_assignment()[cell_id];
+        cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+        cout << "Enter the name of its new part: ";
+        std::cin >> name;
+        int new_part = stoi(name);
+        bool success = geograph.attempt_flip(cell_id, new_part);
+        if (success) {
+            cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
+        } else {
+            cout << "Flip failed.\n";
+        }
+        
+        cout << "Try another flip? (Y/N)";
+        std::cin >> response;
+    }
 }

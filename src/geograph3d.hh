@@ -4,7 +4,7 @@
 
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
-#include "staticgraph.hh"
+#include "static_graph.hh"
 #include <string>
 #include <vector>
 using std::string;

@@ -15,6 +15,8 @@
 using std::string;
 using std::vector;
 
+bool DEBUG = true;
+
 namespace gg3d {
 /** Constructor for 3-D geo-graph. 
  * Builds representation of 3-D geo-graph from 
@@ -138,57 +140,50 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 }
 
 bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
-    // Start by checking conditions (2) and (3), since expected to be faster.
+    // Start by checking conditions (2) and (3), since expected to be faster
+    // (linear in size of surface graph, which is approx. number of neighbors, 
+    // vs. linear in number of augmented neighbors for condition (1)).
     // TODO: Somehow keep track of *which* conditions fail over random iterations 
     //       and possibly use results to decide what order to check conditions. 
+    //       Currently printing (to std::cout) which condition failed; may want to return an enum result 
+    //       (success, cond 1 fail, cond 2 fail, cond 3 fail).
     
-    // Condition (2): Surface dual graph w.r.t. old part
+    // Conditions (2) and (3): Surface dual graphs w.r.t. old and new parts
     vector<int> neighbors = g.adjacency_list[cell_id];
     vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
-    for (auto & neighbor : neighbors) { // TODO: will this loop with a find operation inside it cause an asymptotic slow-down? 
-        // TODO: switch to looping over INDICES in surface dual graph, and then can use vertex_name index to get cell ids
-        int neighbor_part = assignment[neighbor];
-        if (neighbor_part != assignment[cell_id]) continue;
-        string neighbor_name = g.vertex_name[neighbor];
-        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
-        if (it != surface_dual[cell_id].vertex_name.end()) {
-            int old_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
-            old_part_face_ids.push_back(old_part_neighbor_id);
+    vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
+    vector<int> old_complement_face_ids; // Complement of old_part_face_ids w.r.t. set of surface dual vertex IDs
+    vector<int> new_complement_face_ids; // Complement of new_part_face_ids w.r.t. set of surface dual vertex IDs
+
+    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
+        string neighbor_name = surface_dual[cell_id].vertex_name[face_id];
+        int neighbor_id = stoi(neighbor_name);
+        int neighbor_part = assignment[neighbor_id];
+        // Old part, or complement?
+        if (neighbor_part == assignment[cell_id]) {
+            old_part_face_ids.push_back(face_id);
+        } else {
+            old_complement_face_ids.push_back(face_id);
+        }
+        // New part, or complement?
+        if (neighbor_part == new_part) {
+            new_part_face_ids.push_back(face_id);
+        } else {
+            new_complement_face_ids.push_back(face_id);
         }
     }
 
-    vector<int> complement_face_ids;
-    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-        vector<int>::iterator it = find(old_part_face_ids.begin(), old_part_face_ids.end(), face_id);
-        if (it == old_part_face_ids.end()) complement_face_ids.push_back(face_id);
-    }
-
+    // Check condition (2)
     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
-        || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
+        || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
+        if (DEBUG) cout << "Failed condition (2).";
         return false;
     }
 
-    // Condition (3): Surface dual graph w.r.t. new part
-    vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
-    for (auto & neighbor : neighbors) {
-        int neighbor_part = assignment[neighbor];
-        if (neighbor_part != new_part) continue;
-        string neighbor_name = g.vertex_name[neighbor];
-        vector<string>::iterator it = find(surface_dual[cell_id].vertex_name.begin(), surface_dual[cell_id].vertex_name.end(), neighbor_name);
-        if (it != surface_dual[cell_id].vertex_name.end()) {
-            int new_part_neighbor_id = it - surface_dual[cell_id].vertex_name.begin();
-            new_part_face_ids.push_back(new_part_neighbor_id);
-        }
-    }
-
-    complement_face_ids.clear();
-    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-        vector<int>::iterator it = find(new_part_face_ids.begin(), new_part_face_ids.end(), face_id);
-        if (it == new_part_face_ids.end()) complement_face_ids.push_back(face_id);
-    }
-
+    // Check condition (3)
     if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
-        || !(surface_dual[cell_id].is_connected_subgraph(complement_face_ids))) {
+        || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
+        if (DEBUG) cout << "Failed condition (3).";
         return false;
     }
 
@@ -201,8 +196,12 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
             old_part_neighbor_new_ids.push_back(i);
         }
     }
+    if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
+        if (DEBUG) cout << "Failed condition (1).";
+        return false;
+    }
 
-    return subgraph.is_connected_subgraph(old_part_neighbor_new_ids); // Last condition, so just return its value
+    return true; // Passed all three conditions
 }
 
 }

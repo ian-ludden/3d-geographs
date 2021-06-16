@@ -176,14 +176,14 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     // Check condition (2)
     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
         || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
-        if (DEBUG) cout << "Failed condition (2).";
+        if (DEBUG) cout << "Failed condition (2).\n";
         return false;
     }
 
     // Check condition (3)
     if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
         || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
-        if (DEBUG) cout << "Failed condition (3).";
+        if (DEBUG) cout << "Failed condition (3).\n";
         return false;
     }
     
@@ -197,7 +197,7 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         }
     }
     if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
-        if (DEBUG) cout << "Failed condition (1).";
+        if (DEBUG) cout << "Failed condition (1).\n";
         return false;
     }
 

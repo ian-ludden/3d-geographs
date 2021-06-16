@@ -26,6 +26,24 @@ private:
     const int K;
     /** A map of cell IDs to part assignments, indexed 1 to K */
     vector<int> assignment;
+    
+    /**
+     * Generates an initial assignment that achieves spherical zones, 
+     * which are a pre-condition for 
+     * the correctness of the attempt_flip function. 
+     * The zones are, in general, not population-balanced, 
+     * since all but one zone is a singleton (only one cell). 
+     * 
+     * The procedure is deterministic, 
+     * selecting for each new zone the cell that:
+     *   1. is not a neighbor of other selected singleton zones; 
+     *   2. has the most wall neighbors among cells satisfying condition 1; 
+     *   3. satisfies condition (2) of attempt_flip w.r.t. the default (remainder) zone; and
+     *   4. has the least index among cells satisfying conditions 1-3.  
+     * 
+     * TODO: Add theorem/proof to paper that this procedure produces spherical zones.
+     */
+    void generate_initial_assignment();
 
 public:
     /** 

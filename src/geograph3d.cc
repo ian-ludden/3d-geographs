@@ -205,6 +205,10 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     return true;
 }
 
+void generate_initial_assignment() {
+    int x = 0;
+}
+
 }
 
 int main(int argc, char *argv[]) {

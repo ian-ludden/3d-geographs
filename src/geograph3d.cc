@@ -40,7 +40,7 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
     in_file >> row; // Read first row to get number of cells
 
     N = stoi(row[0]);
-    assignment.resize(N, -1); // Initialize all assignments to dummy part, -1
+    generate_initial_assignment();
     
     // Edges of cell adjacency graph
     vector<Edge> g_edges;
@@ -140,6 +140,11 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 }
 
 bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
+    // Validate new_part (must be between 1 and K, inclusive)
+    if (new_part < 1 || new_part > K) {
+        throw std::invalid_argument("New part must be between 1 and K.");
+    }
+
     // Start by checking conditions (2) and (3), since expected to be faster
     // (linear in size of surface graph, which is approx. number of neighbors, 
     // vs. linear in number of augmented neighbors for condition (1)).
@@ -203,10 +208,6 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
 
     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
     return true;
-}
-
-void generate_initial_assignment() {
-    int x = 0;
 }
 
 }

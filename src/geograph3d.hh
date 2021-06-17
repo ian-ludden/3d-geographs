@@ -43,7 +43,67 @@ private:
      * 
      * TODO: Add theorem/proof to paper that this procedure produces spherical zones.
      */
-    void generate_initial_assignment();
+    void generate_initial_assignment() {
+        vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
+        vector<int> num_wall_neighbors; // Number of neighbors of each cell that are walls
+        vector<int> singleton_zone_cells; // Indices of cells used to create singleton zones
+
+        is_adjacent_to_singleton.resize(N, false);
+        num_wall_neighbors.resize(N, 0);
+        for (int i = 0; i < N; ++i) {
+            vector<int> i_neighbors = g.adjacency_list[i];
+            for (auto & i_neighbor : i_neighbors) {
+                if (i_neighbor < 0) ++num_wall_neighbors[i];
+            }
+        }
+        
+        while (singleton_zone_cells.size() < K - 1) {
+            int new_singleton_index = -1;
+            for (int i = 0; i < N; ++i) {
+                if (!is_adjacent_to_singleton[i]) {
+                    if (new_singleton_index < 0 
+                        || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
+                        // Check condition (2) of attempt_flip w.r.t. default (remainder) zone. 
+                        // All nonnegative neighbors are currently in the default zone. 
+                        vector<int> old_part_face_ids;
+                        vector<int> old_complement_face_ids;
+                        for (int face_id = 0; face_id < surface_dual[i].size; ++face_id) {
+                            string neighbor_name = surface_dual[i].vertex_name[face_id];
+                            int neighbor_id = stoi(neighbor_name);
+                            if (neighbor_id >= 0) {
+                                old_part_face_ids.push_back(face_id);
+                            } else {
+                                old_complement_face_ids.push_back(face_id);
+                            }
+                        }
+                        if (surface_dual[i].is_connected_subgraph(old_part_face_ids) 
+                            && surface_dual[i].is_connected_subgraph(old_complement_face_ids)) {
+                            new_singleton_index = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (new_singleton_index < 0) {
+                return;
+                // Alternative: throw "Failed to find a valid new singleton zone.";
+            }
+            singleton_zone_cells.push_back(new_singleton_index);
+            for (auto & neighbor_id : g.adjacency_list[new_singleton_index]) {
+                if (neighbor_id >= 0) is_adjacent_to_singleton[neighbor_id] = true;
+            }
+        }
+
+        // Populate & set initial assignment
+        vector<int> init_assignment;
+        init_assignment.resize(N, K);
+        int zone_index = 1;
+        for (auto & singleton : singleton_zone_cells) {
+            init_assignment[singleton] = zone_index++;
+        }
+        set_assignment(init_assignment);
+    };
 
 public:
     /** 

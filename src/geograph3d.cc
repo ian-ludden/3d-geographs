@@ -40,7 +40,6 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
     in_file >> row; // Read first row to get number of cells
 
     N = stoi(row[0]);
-    generate_initial_assignment();
     
     // Edges of cell adjacency graph
     vector<Edge> g_edges;
@@ -48,11 +47,6 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
     in_file >> row; // Skip row of column headers
 
     int id;
-
-    vector<vector<int>> neighbors; // List of lists of neighbor IDs; primary index is cell ID
-    vector<vector<int>> aug_neighbors; // List of lists of augmented neighbor (but not neighbor) IDs; primary index is cell ID
-    vector<vector<uint64_t>> faces; // List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
-                                    // NB: Breaks if any cell has more than 64 vertices. 
 
     neighbors.reserve(N);
     aug_neighbors.reserve(N);
@@ -69,7 +63,7 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
         cell_neighbors = delimited_list_to_vector_of_int(row[1], ' ');
         neighbors.push_back(cell_neighbors);
 
-        // Add new edges (i.e., to higher-ID neighbors)
+        // Add new edges (i.e., to higher-ID, or wall, neighbors)
         for (auto &neighbor : cell_neighbors) {
             if (id < neighbor) g_edges.push_back({id, neighbor});
         }
@@ -122,6 +116,9 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
                                (int) cell_neighbors.size(),
                                surface_dual_vertex_names));
     }
+
+    // Now that adjacency lists and surface duals are initialized, create initial assignment
+    generate_initial_assignment();
 
     // Construct augmented neighborhood induced subgraphs
     for (int cell_id = 0; cell_id < N; ++cell_id) {
@@ -274,7 +271,7 @@ int main(int argc, char *argv[]) {
 
     // Attempt flips    
     string response = "Y";
-    while (response == "Y" || response == "y") {
+    while (response[0] == 'Y' || response[0] == 'y') {
         cout << "Enter the name of the unit/cell to be flipped: ";
         string name;
         std::cin >> name;
@@ -291,7 +288,7 @@ int main(int argc, char *argv[]) {
             cout << "Flip failed.\n";
         }
         
-        cout << "Try another flip? (Y/N)";
+        cout << "Try another flip? (Y/N) ";
         std::cin >> response;
     }
 }

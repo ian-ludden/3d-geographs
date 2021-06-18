@@ -5,6 +5,7 @@
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
+#include <iostream>
 #include <string>
 #include <vector>
 using std::string;
@@ -26,7 +27,16 @@ private:
     const int K;
     /** A map of cell IDs to part assignments, indexed 1 to K */
     vector<int> assignment;
-    
+    /** List of lists of neighbor IDs; primary index is cell ID. Includes wall neighbors (-1 through -6)*/
+    vector<vector<int>> neighbors;
+    /** List of lists of augmented neighbor (but not neighbor) IDs; primary index is cell ID */
+    vector<vector<int>> aug_neighbors;
+    /** 
+     * List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
+     * NB: Breaks if any cell has more than 64 vertices. 
+     */
+    vector<vector<uint64_t>> faces;
+
     /**
      * Generates an initial assignment that achieves spherical zones, 
      * which are a pre-condition for 
@@ -51,13 +61,12 @@ private:
         is_adjacent_to_singleton.resize(N, false);
         num_wall_neighbors.resize(N, 0);
         for (int i = 0; i < N; ++i) {
-            vector<int> i_neighbors = g.adjacency_list[i];
-            for (auto & i_neighbor : i_neighbors) {
+            for (auto & i_neighbor : this->neighbors[i]) {
                 if (i_neighbor < 0) ++num_wall_neighbors[i];
             }
         }
         
-        while (singleton_zone_cells.size() < K - 1) {
+        while (singleton_zone_cells.size() < (size_t) K - 1) {
             int new_singleton_index = -1;
             for (int i = 0; i < N; ++i) {
                 if (!is_adjacent_to_singleton[i]) {
@@ -78,8 +87,9 @@ private:
                         }
                         if (surface_dual[i].is_connected_subgraph(old_part_face_ids) 
                             && surface_dual[i].is_connected_subgraph(old_complement_face_ids)) {
-                            new_singleton_index = i;
-                            break;
+                            new_singleton_index = i; // Pick this singleton for now. 
+                                                     // Could replace if a later cell 
+                                                     // has more wall neighbors. 
                         }
                     }
                 }
@@ -90,8 +100,9 @@ private:
                 // Alternative: throw "Failed to find a valid new singleton zone.";
             }
             singleton_zone_cells.push_back(new_singleton_index);
+            is_adjacent_to_singleton[new_singleton_index] = true; // Consider singleton adjacent to itself to remove from candidates
             for (auto & neighbor_id : g.adjacency_list[new_singleton_index]) {
-                if (neighbor_id >= 0) is_adjacent_to_singleton[neighbor_id] = true;
+                is_adjacent_to_singleton[neighbor_id] = true; // Remove non-wall neighbors from candidates
             }
         }
 

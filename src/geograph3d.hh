@@ -11,6 +11,8 @@
 using std::string;
 using std::vector;
 
+bool DEBUG = false;
+
 namespace gg3d {
 /** \brief Class representing a complete 3-D geo-graph. 
  * 
@@ -63,6 +65,9 @@ private:
         for (int i = 0; i < N; ++i) {
             for (auto & i_neighbor : this->neighbors[i]) {
                 if (i_neighbor < 0) ++num_wall_neighbors[i];
+            }
+            if (DEBUG) {
+                if (num_wall_neighbors[i] >= 3) std::cout << "Cell " << i << " has " << num_wall_neighbors[i] << " wall neighbors.\n";
             }
         }
         

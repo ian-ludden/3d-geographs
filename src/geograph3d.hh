@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 using std::string;
 using std::vector;
 
@@ -47,13 +48,13 @@ private:
      * since all but one zone is a singleton (only one cell). 
      * 
      * The procedure is deterministic, 
-     * selecting for each new zone the cell that:
+     * selecting for each new zone a cell that
      *   1. is not a neighbor of other selected singleton zones; 
-     *   2. has the most wall neighbors among cells satisfying condition 1; 
-     *   3. satisfies condition (2) of attempt_flip w.r.t. the default (remainder) zone; and
-     *   4. has the least index among cells satisfying conditions 1-3.  
+     *   2. satisfies condition (1) of attempt_flip; and 
+     *   3. satisfies condition (2) of attempt_flip w.r.t. the default (remainder) zone. 
      * 
-     * TODO: Add theorem/proof to paper that this procedure produces spherical zones.
+     * Among cells with maximum number of wall neighbors satisfying the conditions, 
+     * the cell with least index is chosen. 
      */
     void generate_initial_assignment() {
         vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
@@ -79,10 +80,12 @@ private:
                         || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
                         // Check condition (1) of attempt_flip
                         static_graph subgraph = aug_neighbor_graph[i];
-                        vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
+                        vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of other cells from old part
                         for (int i = 0; i < subgraph.size; ++i) {
                             int vertex_id = stoi(subgraph.vertex_name[i]);
-                            if (assignment[vertex_id] == assignment[i]) {
+                            // Make sure the old part aug neighbor is not a singleton zone
+                            vector<int>::iterator it = std::find(singleton_zone_cells.begin(), singleton_zone_cells.end(), vertex_id);
+                            if (it == singleton_zone_cells.end()) {
                                 old_part_neighbor_new_ids.push_back(i);
                             }
                         }
@@ -114,6 +117,11 @@ private:
             }
 
             if (new_singleton_index < 0) {
+                std::cout << "Failed to find a valid new singleton zone. Found " << singleton_zone_cells.size() << " so far:";
+                for (auto & singleton : singleton_zone_cells) {
+                    std::cout << "\t" << singleton << "\n";
+                }
+                std::cout << "\n";
                 return;
                 // Alternative: throw "Failed to find a valid new singleton zone.";
             }
@@ -126,8 +134,8 @@ private:
 
         // Populate & set initial assignment
         vector<int> init_assignment;
-        init_assignment.resize(N, K);
-        int zone_index = 1;
+        init_assignment.resize(N, 1);
+        int zone_index = 2;
         for (auto & singleton : singleton_zone_cells) {
             init_assignment[singleton] = zone_index++;
         }

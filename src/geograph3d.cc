@@ -15,8 +15,6 @@
 using std::string;
 using std::vector;
 
-bool DEBUG = true;
-
 namespace gg3d {
 /** Constructor for 3-D geo-graph. 
  * Builds representation of 3-D geo-graph from 
@@ -117,9 +115,6 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
                                surface_dual_vertex_names));
     }
 
-    // Now that adjacency lists and surface duals are initialized, create initial assignment
-    generate_initial_assignment();
-
     // Construct augmented neighborhood induced subgraphs
     for (int cell_id = 0; cell_id < N; ++cell_id) {
         vector<int> all_aug_neighbors(neighbors[cell_id]);
@@ -134,6 +129,9 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 
         aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
     }
+
+    // Now that all member variables are initialized, create initial assignment
+    generate_initial_assignment();
 }
 
 bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
@@ -276,11 +274,17 @@ int main(int argc, char *argv[]) {
         string name;
         std::cin >> name;
         cell_id = stoi(name);
-        int part = geograph.get_assignment()[cell_id];
+        vector<int> current_assignment = geograph.get_assignment();
+        int part = current_assignment[cell_id];
         cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
         cout << "Enter the name of its new part: ";
         std::cin >> name;
         int new_part = stoi(name);
+        if (new_part == part) {
+            cout << "That's the same part. Try again.\n";
+            continue;
+        }
+       
         bool success = geograph.attempt_flip(cell_id, new_part);
         if (success) {
             cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";

@@ -77,6 +77,19 @@ private:
                 if (!is_adjacent_to_singleton[i]) {
                     if (new_singleton_index < 0 
                         || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
+                        // Check condition (1) of attempt_flip
+                        static_graph subgraph = aug_neighbor_graph[i];
+                        vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
+                        for (int i = 0; i < subgraph.size; ++i) {
+                            int vertex_id = stoi(subgraph.vertex_name[i]);
+                            if (assignment[vertex_id] == assignment[i]) {
+                                old_part_neighbor_new_ids.push_back(i);
+                            }
+                        }
+                        if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
+                            continue;
+                        }
+
                         // Check condition (2) of attempt_flip w.r.t. default (remainder) zone. 
                         // All nonnegative neighbors are currently in the default zone. 
                         vector<int> old_part_face_ids;

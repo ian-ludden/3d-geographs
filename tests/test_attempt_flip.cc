@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         bool expected_result = (expected_result_str.compare("TRUE") == 0);
         
         vector<int> init_assignment;
-        init_assignment.resize(27, 3); // 3x3x3 uniform grid used for all test cases
+        init_assignment.resize(27, num_parts); // 3x3x3 uniform grid used for all test cases
 
         for (int part = 1; part < num_parts; ++part) { // Don't need last part, can leave as default
             vector<int> part_cell_ids = delimited_list_to_vector_of_int(row[4 + part], ' ');
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
         geograph.set_assignment(init_assignment);
 
         bool result = geograph.attempt_flip(cell_id, new_part);
-        results[curr_test_case] = result == expected_result;
+        results.push_back(result == expected_result);
 
         if (!results[curr_test_case]) {
             cout << "\tFailed test ID " << test_id << ".\n";

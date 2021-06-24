@@ -2,20 +2,18 @@
 #include "voro++.hh"
 using namespace voro;
 
-const bool DEBUG = false;
-
 // Define bounding box
 const int x_min = 0;
-const int x_max = 10;
+const int x_max = 3;
 const int y_min = 0; 
-const int y_max = 20;
+const int y_max = 3;
 const int z_min = 0; 
-const int z_max = 10; 
+const int z_max = 3; 
 
 const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
-// Define parameters for container blocks
-const int blocks_x = 5, blocks_y = 5, blocks_z = 5;
+// Define parameters for container blocks (used to pre-allocate memory for container object)
+const int blocks_x = 1, blocks_y = 1, blocks_z = 1;
 const int particles_per_block = ((box_vol / blocks_x) / blocks_y) / blocks_z;
 
 int main() {
@@ -38,7 +36,6 @@ int main() {
             for (k = z_min; k < z_max; k++) {
                 z = k + 0.5;
                 con.put(index, x, y, z);
-                if (DEBUG) printf("Point %d: (%g, %g, %g)\n", index, x, y, z);
                 index++;
             }
         }

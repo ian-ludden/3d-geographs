@@ -3,7 +3,7 @@
  * \brief Implementation of the 3-D geo-graph. */
 #include "geograph3d.hh"
 #include "static_graph.hh"
-#include "../generate_input/find_augmented_neighbors.hh"
+#include "../generate_input/conversion_utils.hh"
 #include "../generate_input/vector_utils.hh"
 #include <bitset>
 #include <fstream>
@@ -27,7 +27,7 @@ namespace gg3d {
  *  - Builds augmented neighborhood induced subgraphs for each cell. 
  * 
  * \param[in] (in_filename) String name of the input CSV file, 
- *                          such as that produced by find_augmented_neighbors.
+ *                          such as that produced by conversion_utils.
  *                          NB: This constructor assumes rows are sorted by cell ID, ascending. 
  * \param[in] (num_parts) The number of parts in the partition (stored as K). 
  * */
@@ -176,14 +176,14 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
     // Check condition (2)
     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
         || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
-        if (DEBUG) cout << "Failed condition (2).\n";
+        cout << "Failed condition (2).\n";
         return false;
     }
 
     // Check condition (3)
     if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
         || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
-        if (DEBUG) cout << "Failed condition (3).\n";
+        cout << "Failed condition (3).\n";
         return false;
     }
     
@@ -197,7 +197,7 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
         }
     }
     if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
-        if (DEBUG) cout << "Failed condition (1).\n";
+        cout << "Failed condition (1).\n";
         return false;
     }
 
@@ -207,92 +207,87 @@ bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
 
 }
 
-int main(int argc, char *argv[]) {
-    string in_filename;
-    int K;
+/** Uncomment below to run interactive program allowing user to give flips to attempt */
+// int main(int argc, char *argv[]) {
+//     string in_filename;
+//     int K;
     
-    if (argc >= 3) {
-        in_filename = argv[1];
-        K = std::stoi(argv[2]);
-    } else {
-        string prog_name = argv[0];
-        if (prog_name.empty()) prog_name = "<program name>";
-        cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
-        return 0;
-    }
+//     if (argc >= 3) {
+//         in_filename = argv[1];
+//         K = std::stoi(argv[2]);
+//     } else {
+//         string prog_name = argv[0];
+//         if (prog_name.empty()) prog_name = "<program name>";
+//         cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
+//         return 0;
+//     }
 
-    gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
+//     gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
 
-    // Summarize geo-graph
-    cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
-    cout << "partitioned into " << geograph.num_parts() << " parts.\n";
+//     // Summarize geo-graph
+//     cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
+//     cout << "partitioned into " << geograph.num_parts() << " parts.\n";
 
-    // Summarize cell adjacency graph
-    size_t count_g_edges = 0;
-    for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
-    count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
+//     // Summarize cell adjacency graph
+//     size_t count_g_edges = 0;
+//     for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
+//     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
-    // Spot-check surface dual graphs
-    int cell_id = 0;
-    cout << "The surface dual graph for cell " << cell_id;
-    cout << " has " << geograph.surface_dual[cell_id].size << " vertices and ";
-    size_t count_edges = 0;
-    for (auto & adj_list : geograph.surface_dual[cell_id].adjacency_list) count_edges += adj_list.size();
-    count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << count_edges << " edges.\n";
-    cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
-    cout << "\n\n";
+//     // Spot-check surface dual graphs
+//     int cell_id = 0;
+//     cout << "The surface dual graph for cell " << cell_id;
+//     cout << " has " << geograph.surface_dual[cell_id].size << " vertices and ";
+//     size_t count_edges = 0;
+//     for (auto & adj_list : geograph.surface_dual[cell_id].adjacency_list) count_edges += adj_list.size();
+//     count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     cout << count_edges << " edges.\n";
+//     cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
+//     cout << "\n\n";
 
-    cell_id = 111;
-    cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
-    cout << "\n\n";
+//     cell_id = 111;
+//     cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
+//     cout << "\n\n";
 
-    // Spot-check induced augmented neighborhood subgraphs
-    cell_id = 0;
-    cout << "The augmented neighborhood induced subgraph for cell " << cell_id;
-    cout << " has " << geograph.aug_neighbor_graph[cell_id].size << " vertices and ";
-    count_edges = 0;
-    for (auto & adj_list : geograph.aug_neighbor_graph[cell_id].adjacency_list) count_edges += adj_list.size();
-    count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << count_edges << " edges.\n";
-    cout << "The names of the vertices of the augmented neighborhood induced subgraph for cell " << cell_id << " are";
-    for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
-    cout << "\n\n";
+//     // Spot-check induced augmented neighborhood subgraphs
+//     cell_id = 0;
+//     cout << "The augmented neighborhood induced subgraph for cell " << cell_id;
+//     cout << " has " << geograph.aug_neighbor_graph[cell_id].size << " vertices and ";
+//     count_edges = 0;
+//     for (auto & adj_list : geograph.aug_neighbor_graph[cell_id].adjacency_list) count_edges += adj_list.size();
+//     count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     cout << count_edges << " edges.\n";
+//     cout << "The names of the vertices of the augmented neighborhood induced subgraph for cell " << cell_id << " are";
+//     for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+//     cout << "\n\n";
 
-    cell_id = 111;
-    cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
-    cout << "\n\n";
+//     cell_id = 111;
+//     cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+//     cout << "\n\n";
 
-    // Attempt flips    
-    string response = "Y";
-    while (response[0] == 'Y' || response[0] == 'y') {
-        cout << "Enter the name of the unit/cell to be flipped: ";
-        string name;
-        std::cin >> name;
-        cell_id = stoi(name);
-        vector<int> current_assignment = geograph.get_assignment();
-        int part = current_assignment[cell_id];
-        cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
-        cout << "Enter the name of its new part: ";
-        std::cin >> name;
-        int new_part = stoi(name);
-        if (new_part == part) {
-            cout << "That's the same part. Try again.\n";
-            continue;
-        }
-       
-        bool success = geograph.attempt_flip(cell_id, new_part);
-        if (success) {
-            cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
-        } else {
-            cout << "Flip failed.\n";
-        }
+//     // Attempt flips    
+//     string response = "Y";
+//     while (response[0] == 'Y' || response[0] == 'y') {
+//         cout << "Enter the name of the unit/cell to be flipped: ";
+//         string name;
+//         std::cin >> name;
+//         cell_id = stoi(name);
+//         int part = geograph.get_assignment()[cell_id];
+//         cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+//         cout << "Enter the name of its new part: ";
+//         std::cin >> name;
+//         int new_part = stoi(name);
+//         bool success = geograph.attempt_flip(cell_id, new_part);
+//         if (success) {
+//             cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
+//         } else {
+//             cout << "Flip failed.\n";
+//         }
         
-        cout << "Try another flip? (Y/N) ";
-        std::cin >> response;
-    }
-}
+//         cout << "Try another flip? (Y/N) ";
+//         std::cin >> response;
+//     }
+// }

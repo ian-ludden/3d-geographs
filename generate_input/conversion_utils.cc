@@ -2,7 +2,7 @@
  * Transform CSV output by Voro++ with cell information 
  * into format needed to construct 3-D geo-graph. 
  */
-#include "find_augmented_neighbors.hh"
+#include "conversion_utils.hh"
 #include "vector_utils.hh"
 #include <fstream>
 #include <iostream>
@@ -12,11 +12,13 @@ using std::cout;
 using std::string;
 using std::vector;
 
-/**
- * Tolerance to apply to each coordinate when checking whether
- * two vertices in \reals^3 are equal. 
+/** 
+ * Read next row of csv_row object.
  */
-const double VERTEX_TOLERANCE = 1.0e-10;
+std::istream & operator>>(std::istream & str, csv_row & data) {
+    data.read_next_row(str);
+    return str;
+}
 
 /**
  * Determines whether the two given vertices (as vectors of doubles 
@@ -42,6 +44,13 @@ bool is_same_vertex(vector<double> v1, vector<double> v2, const double tol) {
     return true;
 }
 
+/**
+ * Converts the output csv file (from random_points_box.cc, uniform_grid.cc, 
+ * or another input generator with the same output format) into a version for 
+ * building a 3-D geo-graph (geograph3d object). 
+ * 
+ * One of the primary subtasks is finding the augmented neighbors of each cell. 
+ */
 void convert_output_csv(std::string in_filename, std::string out_filename) {
     csv_row row;
     int total_particles;
@@ -207,19 +216,20 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     out_file.close();
 }
 
-int main(int argc, char *argv[]) {
-    string in_filename;
-    string out_filename;
+// Uncomment if you want to build as a standalone executable
+// int main(int argc, char *argv[]) {
+//     string in_filename;
+//     string out_filename;
 
-    if (argc >= 3) {
-        in_filename = argv[1];
-        out_filename = argv[2];
-    } else {
-        string prog_name = argv[0];
-        if (prog_name.empty()) prog_name = "<program name>";
-        cout << "Usage: " << prog_name << " <input_filename> <output_filename>\n";
-        return 0;
-    }
+//     if (argc >= 3) {
+//         in_filename = argv[1];
+//         out_filename = argv[2];
+//     } else {
+//         string prog_name = argv[0];
+//         if (prog_name.empty()) prog_name = "<program name>";
+//         cout << "Usage: " << prog_name << " <input_filename> <output_filename>\n";
+//         return 0;
+//     }
 
-    convert_output_csv(in_filename, out_filename);
-}
+//     convert_output_csv(in_filename, out_filename);
+// }

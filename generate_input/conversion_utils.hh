@@ -1,12 +1,18 @@
 /**
- * Header file for find_augmented_neighbors.cc. 
+ * Header file for conversion_utils.cc. 
  */
-#ifndef FIND_AUGMENTED_NEIGHBORS_HH
-#define FIND_AUGMENTED_NEIGHBORS_HH
+#ifndef CONVERSION_UTILS_HH
+#define CONVERSION_UTILS_HH
 #include <iostream>
 #include <string>
 #include <vector>
 using std::cout;
+
+/**
+ * Tolerance to apply to each coordinate when checking whether
+ * two vertices in \reals^3 are equal. 
+ */
+const double VERTEX_TOLERANCE = 1.0e-10;
 
 /**
  * Object representation of CSV row, based on StackOverflow answer: 
@@ -73,9 +79,27 @@ public:
     };
 };
 
-std::istream & operator>>(std::istream & str, csv_row & data) {
-    data.read_next_row(str);
-    return str;
-}
+std::istream & operator>>(std::istream & str, csv_row & data);
 
-#endif /** FIND_AUGMENTED_NEIGHBORS_HH */
+/**
+ * Determines whether the two given vertices (as vectors of doubles 
+ * representing each coordinate) are the same vertex, within a given tolerance.
+ * 
+ * \param[in] (v1) Vertex 1, given as a vector of `double` coordinates. 
+ * \param[in] (v2) Vertex 2, given as a vector of `double` coordinates. 
+ * \param[in] (tol) Absolute tolerance for considering two entries equal. 
+ * 
+ * \return true if the vertices agree (within tolerance tol) in every entry; false otherwise
+ */
+bool is_same_vertex(std::vector<double> v1, std::vector<double> v2, const double tol);
+
+/**
+ * Converts the output csv file (from random_points_box.cc, uniform_grid.cc, 
+ * or another input generator with the same output format) into a version for 
+ * building a 3-D geo-graph (geograph3d object). 
+ * 
+ * One of the primary subtasks is finding the augmented neighbors of each cell. 
+ */
+void convert_output_csv(std::string in_filename, std::string out_filename);
+
+#endif /** CONVERSION_UTILS_HH */

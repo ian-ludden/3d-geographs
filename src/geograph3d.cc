@@ -16,6 +16,24 @@ using std::string;
 using std::vector;
 
 namespace gg3d {
+/** Constructor for cell_vertex. 
+ * 
+ * \param[in] (id) The id of the cell vertex. 
+ */
+cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} {}
+
+/** Constructor for cell_edge. 
+ * 
+ * \param[in] (id) The id of the cell edge. 
+ */
+cell_edge::cell_edge(size_t id) : id{id} {}
+
+/** Constructor for cell_face. 
+ * 
+ * \param[in] (id) The id of the cell face. 
+ */
+cell_face::cell_face(size_t id) : id{id} {}
+
 /** Constructor for 3-D geo-graph. 
  * Builds representation of 3-D geo-graph from 
  * output of Voro++ representing a Voronoi tesselation 
@@ -44,7 +62,8 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
 
     in_file >> row; // Skip row of column headers
 
-    int id;
+    int cell_id;
+    size_t num_neighbors;
 
     neighbors.reserve(N);
     aug_neighbors.reserve(N);
@@ -53,159 +72,176 @@ geograph3d::geograph3d(const string in_filename, const int num_parts)
     // Read each row and store info for that cell
     while (in_file >> row) {
         vector<int> cell_neighbors; // Temp list of neighbor IDs
-        vector<int> cell_aug_neighbors; // Temp list of augmented neighbor IDs
-        vector<uint64_t> cell_faces; // Temp list of bit representations of faces
-
-        id = stoi(row[0]);
-
-        cell_neighbors = delimited_list_to_vector_of_int(row[1], ' ');
+    //     vector<int> cell_aug_neighbors; // Temp list of augmented neighbor IDs
+    //     vector<uint64_t> cell_faces; // Temp list of bit representations of faces
+        cell_id = stoi(row[0]);
+        num_neighbors = stoi(row[1]);
+        cell_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
         neighbors.push_back(cell_neighbors);
 
-        // Add new edges (i.e., to higher-ID, or wall, neighbors)
-        for (auto &neighbor : cell_neighbors) {
-            if (id < neighbor) g_edges.push_back({id, neighbor});
+    // Add new edges (i.e., to neighbors with greater ID)
+        for (auto &neighbor_id : cell_neighbors) {
+            if (cell_id < neighbor_id) g_edges.push_back({cell_id, neighbor_id});
         }
 
-        cell_aug_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
-        aug_neighbors.push_back(cell_aug_neighbors);
+    //     cell_aug_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
+    //     aug_neighbors.push_back(cell_aug_neighbors);
 
-        vector<string> face_tuples = delimited_tuples_to_vector_of_string(row[3]);
-        cell_faces.reserve(face_tuples.size());
+    //     vector<string> face_tuples = delimited_tuples_to_vector_of_string(row[3]);
+    //     cell_faces.reserve(face_tuples.size());
 
-        for (auto &face_tuple : face_tuples) {
-            string face_tuple_contents = face_tuple.substr(1, face_tuple.length() - 2); // Remove parentheses
-            vector<int> face_vertices = delimited_list_to_vector_of_int(face_tuple_contents, ' ');
+    //     for (auto &face_tuple : face_tuples) {
+    //         string face_tuple_contents = face_tuple.substr(1, face_tuple.length() - 2); // Remove parentheses
+    //         vector<int> face_vertices = delimited_list_to_vector_of_int(face_tuple_contents, ' ');
             
-            uint64_t face_bit_repr = 0; // Bit representation of face, where bit i is 1 (0) if vertex i is (not) part of the face
-            for (auto &face_vertex : face_vertices) {
-                face_bit_repr += 1 << face_vertex; // Bit shift to make bit face_vertex 1
-            }
-            cell_faces.push_back(face_bit_repr);
-        }
+    //         uint64_t face_bit_repr = 0; // Bit representation of face, where bit i is 1 (0) if vertex i is (not) part of the face
+    //         for (auto &face_vertex : face_vertices) {
+    //             face_bit_repr += 1 << face_vertex; // Bit shift to make bit face_vertex 1
+    //         }
+    //         cell_faces.push_back(face_bit_repr);
+    //     }
 
-        faces.push_back(cell_faces);
+    //     faces.push_back(cell_faces);
     }
 
-    // Construct cell adjacency graph
-    g = static_graph(g_edges, N);
+    // // Construct cell adjacency graph
+    // g = static_graph(g_edges, N);
 
-    // Construct surface dual graphs
-    for (int cell_id = 0; cell_id < N; ++cell_id) {
-        vector<int> cell_neighbors = neighbors[cell_id];
-        vector<uint64_t> cell_faces = faces[cell_id];
+    // // Construct surface dual graphs
+    // for (int cell_id = 0; cell_id < N; ++cell_id) {
+    //     vector<int> cell_neighbors = neighbors[cell_id];
+    //     vector<uint64_t> cell_faces = faces[cell_id];
 
-        vector<Edge> surface_dual_edges;
-        vector<string> surface_dual_vertex_names;
+    //     vector<Edge> surface_dual_edges;
+    //     vector<string> surface_dual_vertex_names;
         
-        for (size_t i = 0; i < cell_faces.size(); ++i) {
-            surface_dual_vertex_names.push_back(std::to_string(cell_neighbors[i]));
+    //     for (size_t i = 0; i < cell_faces.size(); ++i) {
+    //         surface_dual_vertex_names.push_back(std::to_string(cell_neighbors[i]));
 
-            for (size_t j = i + 1; j < cell_faces.size(); ++j) {
-                size_t count_shared_vertices = std::bitset<64>{cell_faces[i] & cell_faces[j]}.count();
-                // Two faces on the surface share an edge if they share (exactly) two vertices. 
-                if (count_shared_vertices == 2) {
-                    Edge new_edge = {(int) i, (int) j};
-                    surface_dual_edges.push_back(new_edge);
-                }
-            }
-        }
+    //         for (size_t j = i + 1; j < cell_faces.size(); ++j) {
+    //             size_t count_shared_vertices = std::bitset<64>{cell_faces[i] & cell_faces[j]}.count();
+    //             // Two faces on the surface share an edge if they share (exactly) two vertices. 
+    //             if (count_shared_vertices == 2) {
+    //                 Edge new_edge = {(int) i, (int) j};
+    //                 surface_dual_edges.push_back(new_edge);
+    //             }
+    //         }
+    //     }
 
-        surface_dual.push_back(gg3d::static_graph(surface_dual_edges,
-                               (int) cell_neighbors.size(),
-                               surface_dual_vertex_names));
-    }
+    //     surface_dual.push_back(gg3d::static_graph(surface_dual_edges,
+    //                            (int) cell_neighbors.size(),
+    //                            surface_dual_vertex_names));
+    // }
 
-    // Construct augmented neighborhood induced subgraphs
-    for (int cell_id = 0; cell_id < N; ++cell_id) {
-        vector<int> all_aug_neighbors(neighbors[cell_id]);
-        for (auto & aug_neighbor : aug_neighbors[cell_id]) all_aug_neighbors.push_back(aug_neighbor);
+    // // Construct augmented neighborhood induced subgraphs
+    // for (int cell_id = 0; cell_id < N; ++cell_id) {
+    //     vector<int> all_aug_neighbors(neighbors[cell_id]);
+    //     for (auto & aug_neighbor : aug_neighbors[cell_id]) all_aug_neighbors.push_back(aug_neighbor);
 
-        // Convert augmented neighbor IDs to names
-        vector<string> all_aug_neighbor_names = {};
-        for (auto & aug_neighbor_id : all_aug_neighbors) {
-            if (aug_neighbor_id < 0) continue; // Ignore walls (negative IDs)
-            all_aug_neighbor_names.push_back(g.vertex_name[aug_neighbor_id]);
-        }
+    //     // Convert augmented neighbor IDs to names
+    //     vector<string> all_aug_neighbor_names = {};
+    //     for (auto & aug_neighbor_id : all_aug_neighbors) {
+    //         if (aug_neighbor_id < 0) continue; // Ignore walls (negative IDs)
+    //         all_aug_neighbor_names.push_back(g.vertex_name[aug_neighbor_id]);
+    //     }
 
-        aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
-    }
+    //     aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
+    // }
 
-    // Now that all member variables are initialized, create initial assignment
-    generate_initial_assignment();
+    // // Now that all member variables are initialized, create initial assignment
+    // generate_initial_assignment();
 }
 
-bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
-    // Validate new_part (must be between 1 and K, inclusive)
-    if (new_part < 1 || new_part > K) {
-        throw std::invalid_argument("New part must be between 1 and K.");
-    }
+// bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
+//     // Validate new_part (must be between 1 and K, inclusive)
+//     if (new_part < 1 || new_part > K) {
+//         throw std::invalid_argument("New part must be between 1 and K.");
+//     }
 
-    // Start by checking conditions (2) and (3), since expected to be faster
-    // (linear in size of surface graph, which is approx. number of neighbors, 
-    // vs. linear in number of augmented neighbors for condition (1)).
-    // TODO: Somehow keep track of *which* conditions fail over random iterations 
-    //       and possibly use results to decide what order to check conditions. 
-    //       Currently printing (to std::cout) which condition failed; may want to return an enum result 
-    //       (success, cond 1 fail, cond 2 fail, cond 3 fail).
+//     // Start by checking conditions (2) and (3), since expected to be faster
+//     // (linear in size of surface graph, which is approx. number of neighbors, 
+//     // vs. linear in number of augmented neighbors for condition (1)).
+//     // TODO: Somehow keep track of *which* conditions fail over random iterations 
+//     //       and possibly use results to decide what order to check conditions. 
+//     //       Currently printing (to std::cout) which condition failed; may want to return an enum result 
+//     //       (success, cond 1 fail, cond 2 fail, cond 3 fail).
     
-    // Conditions (2) and (3): Surface dual graphs w.r.t. old and new parts
-    vector<int> neighbors = g.adjacency_list[cell_id];
-    vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
-    vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
-    vector<int> old_complement_face_ids; // Complement of old_part_face_ids w.r.t. set of surface dual vertex IDs
-    vector<int> new_complement_face_ids; // Complement of new_part_face_ids w.r.t. set of surface dual vertex IDs
+//     // Conditions (2) and (3): Surface dual graphs w.r.t. old and new parts
+//     vector<int> neighbors = g.adjacency_list[cell_id];
+//     vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
+//     vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
+//     vector<int> old_complement_face_ids; // Complement of old_part_face_ids w.r.t. set of surface dual vertex IDs
+//     vector<int> new_complement_face_ids; // Complement of new_part_face_ids w.r.t. set of surface dual vertex IDs
 
-    for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-        string neighbor_name = surface_dual[cell_id].vertex_name[face_id];
-        int neighbor_id = stoi(neighbor_name);
-        int neighbor_part = assignment[neighbor_id];
-        // Old part, or complement?
-        if (neighbor_part == assignment[cell_id]) {
-            old_part_face_ids.push_back(face_id);
-        } else {
-            old_complement_face_ids.push_back(face_id);
-        }
-        // New part, or complement?
-        if (neighbor_part == new_part) {
-            new_part_face_ids.push_back(face_id);
-        } else {
-            new_complement_face_ids.push_back(face_id);
-        }
-    }
+//     for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
+//         string neighbor_name = surface_dual[cell_id].vertex_name[face_id];
+//         int neighbor_id = stoi(neighbor_name);
+//         int neighbor_part = assignment[neighbor_id];
+//         // Old part, or complement?
+//         if (neighbor_part == assignment[cell_id]) {
+//             old_part_face_ids.push_back(face_id);
+//         } else {
+//             old_complement_face_ids.push_back(face_id);
+//         }
+//         // New part, or complement?
+//         if (neighbor_part == new_part) {
+//             new_part_face_ids.push_back(face_id);
+//         } else {
+//             new_complement_face_ids.push_back(face_id);
+//         }
+//     }
 
-    // Check condition (2)
-    if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
-        || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
-        cout << "Failed condition (2).\n";
-        return false;
-    }
+//     // Check condition (2)
+//     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
+//         || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
+//         cout << "Failed condition (2).\n";
+//         return false;
+//     }
 
-    // Check condition (3)
-    if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
-        || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
-        cout << "Failed condition (3).\n";
-        return false;
-    }
+//     // Check condition (3)
+//     if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
+//         || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
+//         cout << "Failed condition (3).\n";
+//         return false;
+//     }
     
-    // Condition (1): Induced subgraph condition
-    static_graph subgraph = aug_neighbor_graph[cell_id];
-    vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
-    for (int i = 0; i < subgraph.size; ++i) {
-        int vertex_id = stoi(subgraph.vertex_name[i]);
-        if (assignment[vertex_id] == assignment[cell_id]) {
-            old_part_neighbor_new_ids.push_back(i);
-        }
-    }
-    if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
-        cout << "Failed condition (1).\n";
-        return false;
-    }
+//     // Condition (1): Induced subgraph condition
+//     static_graph subgraph = aug_neighbor_graph[cell_id];
+//     vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
+//     for (int i = 0; i < subgraph.size; ++i) {
+//         int vertex_id = stoi(subgraph.vertex_name[i]);
+//         if (assignment[vertex_id] == assignment[cell_id]) {
+//             old_part_neighbor_new_ids.push_back(i);
+//         }
+//     }
+//     if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
+//         cout << "Failed condition (1).\n";
+//         return false;
+//     }
 
-    assignment[cell_id] = new_part; // Flip succeeded, so update assignment
-    return true;
+//     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
+//     return true;
+// }
+
 }
 
+
+int main(int argc, char *argv[]) {
+    gg3d::cell_vertex v(0, 1.1, 2.2, 3.3);
+    gg3d::cell_vertex u(0, 1.1000000000000000000001, 2.200000000002, 3.3);
+    
+    if (u == v) {
+        cout << "u and v match.\n";
+    } else {
+        cout << "u and v are different.\n";
+    }
+
+    cout << "Enter any response to close. ";
+    string response;
+    std::cin >> response;
+    cout << response;
 }
+
 
 /** Uncomment below to run interactive program allowing user to give flips to attempt */
 // int main(int argc, char *argv[]) {

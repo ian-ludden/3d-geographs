@@ -11,15 +11,15 @@ namespace gg3d {
 
 struct Edge {
     // Undirected; by convention, src < dest
-    int src, dest;
+    size_t src, dest;
 };
 
 class static_graph {
 public:
     /** List of adjacency lists */
-    std::vector<std::vector<int>> adjacency_list;
+    std::vector<std::vector<size_t>> adjacency_list;
     /** Number of vertices */
-    int size;
+    size_t size;
     /** List of vertex names, indexed by ID */
     std::vector<std::string> vertex_name;
 
@@ -33,7 +33,7 @@ public:
      * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
      * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
      * */
-    static_graph(const std::vector<Edge> &edges, int number_of_vertices);
+    static_graph(const std::vector<Edge> &edges, size_t number_of_vertices);
     
     /** Alternate constructor for static graph, 
      * allowing vertex names to be specified (rather than default of 0 to n-1). 
@@ -41,7 +41,7 @@ public:
      * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
      * \param[in] (&vertex_names) pointer to vector of string names of vertices, in order. 
      * */
-    static_graph(const std::vector<Edge> &edges, int number_of_vertices, const std::vector<std::string> &vertex_names);
+    static_graph(const std::vector<Edge> &edges, size_t number_of_vertices, const std::vector<std::string> &vertex_names);
     
     /**
      * Check whether the induced subgraph of the given list of vertices 
@@ -49,7 +49,7 @@ public:
      * from the first vertex in the list. 
      * \param[in] (vertices) pointer to vector of vertex indices (not their string names)
      * */
-    bool is_connected_subgraph(std::vector<int> &vertices);
+    bool is_connected_subgraph(std::vector<size_t> &vertices);
 
     /**
      * Builds and returns a static_graph object representing

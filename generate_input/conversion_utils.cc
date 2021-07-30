@@ -53,7 +53,7 @@ bool is_same_vertex(vector<double> v1, vector<double> v2, const double tol) {
  */
 void convert_output_csv(std::string in_filename, std::string out_filename) {
     csv_row row;
-    int total_particles;
+    size_t total_particles;
 
     std::ifstream in_file(in_filename);
 
@@ -62,21 +62,21 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     
     // Cell IDs (integers from 0 to total_particles - 1, inclusive)
     // mapped to indices for other vectors
-    vector<int> id_to_index;
+    vector<size_t> id_to_index;
     id_to_index.resize(total_particles);
 
     // Reverse map of id_to_index
-    vector<int> index_to_id;
+    vector<size_t> index_to_id;
     index_to_id.reserve(total_particles);
 
     // Lists of neighbors IDs for each cell. 
     // Neighbors of cell with ID = id should be listed at 
     // neighbors[id_to_index[id]].
-    vector<vector<int>> neighbors;
+    vector<vector<size_t>> neighbors;
     neighbors.reserve(total_particles);
 
     // Lists of augmented neighbors (by ID) for each cell, indexed by ID
-    vector<vector<int>> aug_neighbors;
+    vector<vector<size_t>> aug_neighbors;
     aug_neighbors.reserve(total_particles);
 
     // List of cell vertices, stored as 3-tuples of doubles
@@ -92,11 +92,11 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     // Vector of cell vertices, to be used to determine augmented neighbors.
     
     in_file >> row; // Skip headers
-    int index = 0;
+    size_t index = 0;
 
     while (in_file >> row) {
         // Read ID and update index <-> ID maps
-        int id = stoi(row[0]);
+        size_t id = stoi(row[0]);
         id_to_index[id] = index;
         index_to_id.push_back(id);
 
@@ -105,7 +105,9 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         string neighbors_line = row[2];
 
         // Parse neighbor list
-        vector<int> neighbor_list = delimited_list_to_vector_of_int(neighbors_line, ' ');
+        vector<int> neighbor_list_ints = delimited_list_to_vector_of_int(neighbors_line, ' ');
+        vector<size_t> neighbor_list;
+        for (auto &neighbor_int : neighbor_list_ints) neighbor_list.push_back((size_t) neighbor_int);
 
         // Save neighbor list
         neighbors.push_back(neighbor_list);
@@ -149,8 +151,8 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         // Use vertices to find augmented neighbors.
         // Loop over all other (previous) cells, then 
         // loop over all pairs of vertices from this cell and other.
-        vector<int> aug_neighbors_of_current;
-        for (int other_index = 0; other_index < index; ++other_index) {
+        vector<size_t> aug_neighbors_of_current;
+        for (size_t other_index = 0; other_index < index; ++other_index) {
             bool is_aug_neighbor = false;
             for (size_t i = 0; i < vertex_indices[index].size(); ++i) {
                 for (size_t j = 0; j < vertex_indices[other_index].size(); ++j) {
@@ -176,13 +178,13 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
     out_file << total_particles << "\n"; // Number of cells/particles
     out_file << "ID,Neighbors,Aug. Neighbors,Faces\n";
 
-    int id = 0;
+    size_t id = 0;
     while (id < total_particles) {
-        int cell_index = id_to_index[id];
+        size_t cell_index = id_to_index[id];
         out_file << id << ",";
         
-        vector<int> neighbor_list = neighbors[cell_index];
-        vector<int>::size_type neighbor_index = 0;
+        vector<size_t> neighbor_list = neighbors[cell_index];
+        vector<size_t>::size_type neighbor_index = 0;
         // Print first neighbor first to avoid extra space (every cell has at least one neighbor)
         out_file << neighbor_list[neighbor_index++];
         while (neighbor_index < neighbor_list.size()) {
@@ -192,8 +194,8 @@ void convert_output_csv(std::string in_filename, std::string out_filename) {
         out_file << ",";
         
         // Write list of (additional) augmented neighbors
-        vector<int> aug_neighbor_list = aug_neighbors[cell_index];
-        vector<int>::size_type aug_neighbor_index = 0;
+        vector<size_t> aug_neighbor_list = aug_neighbors[cell_index];
+        vector<size_t>::size_type aug_neighbor_index = 0;
 
         if (!aug_neighbor_list.empty()) {
             // Print first aug neighbor before loop to avoid extra space

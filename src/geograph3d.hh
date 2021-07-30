@@ -22,12 +22,22 @@ namespace gg3d {
  */
 class augmented_neighbor {
 private:
-    static size_t id;
+    /** Cell ID of the augmented neighbor */
+    const size_t id;
     
 public:
+    /** IDs of the vertices shared with the augmented_neighbor */
     vector<size_t> shared_vertices;
+    /** IDs of the edges shared with the augmented_neighbor */
     vector<size_t> shared_edges;
+    /** IDs of the faces shared with the augmented_neighbor; should never have more than one */
     vector<size_t> shared_faces;
+
+    /** Constructor for augmented_neighbor. 
+     * 
+     * \param[in] (id) The cell id of the augmented neighbor.
+     */
+    augmented_neighbor(const size_t id);
 };
 
 /** \brief Class representing a vertex (0-face) in 
@@ -99,6 +109,11 @@ public:
      * \param[in] (id) The id of the cell edge. 
      */
     cell_edge(size_t id);
+
+    bool operator == (const cell_edge& e) const {
+        if (vertices.size() != 2) return false;
+        return (vertices[0] == e.vertices[0]) && (vertices[1] == e.vertices[1]);
+    }
 };
 
 /** \brief Class representing a face (2-face) in 
@@ -125,6 +140,18 @@ public:
      * \param[in] (id) The id of the cell face. 
      */
     cell_face(size_t id);
+
+    bool operator == (const cell_face& f) const {
+        return vertices.size() == count_shared_vertices(f);
+    }
+
+    size_t count_shared_vertices(const cell_face& f) const {
+        std::vector<size_t> intersection;
+        std::set_intersection(vertices.begin(), vertices.end(), 
+                              f.vertices.begin(), f.vertices.end(), 
+                              std::back_inserter(intersection));
+        return intersection.size();
+    }
 };
 
 /** \brief Class representing a complete 3-D geo-graph. 
@@ -137,28 +164,28 @@ public:
 class geograph3d {
 private:
     /** Number of cells */
-    int N;
+    size_t N;
     /** Number of parts */
-    const int K;
+    const size_t K;
     /** A map of cell IDs to part assignments, indexed 1 to K */
-    vector<int> assignment;
+    vector<size_t> assignment;
     /** List of lists of neighbor IDs; primary index is cell ID. Includes wall neighbors (-1 through -6)*/
-    vector<vector<int>> neighbors;
+    vector<vector<size_t>> neighbors;
     /** List of lists of augmented neighbors; primary index is cell ID */
-    vector<augmented_neighbor> aug_neighbors;
+    vector<vector<augmented_neighbor>> aug_neighbors;
     /** List of cell vertices */
     vector<cell_vertex> cell_vertices;
     /** List of cell edges */
-    vector<cell_vertex> cell_edge;
+    vector<cell_edge> cell_edges;
     /** List of cell faces */
-    vector<cell_vertex> cell_faces;
+    vector<cell_face> cell_faces;
 
     /** 
      * List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
      * NB: Breaks if any cell has more than 64 vertices. 
      * TODO: Should replace this during rework
      */
-    vector<vector<uint64_t>> faces;
+    // vector<vector<uint64_t>> faces;
 
     /**
      * Generates an initial assignment that achieves spherical zones, 
@@ -283,7 +310,7 @@ public:
      *                          NB: This constructor assumes rows are sorted by cell ID, ascending. 
      * \param[in] (num_parts) The number of parts in the partition (stored as K). 
      */
-    geograph3d(const string in_filename, const int num_parts);
+    geograph3d(const string in_filename, const size_t num_parts);
 
     /**
      * Checks whether flipping a cell to a new part maintains spherical zones (parts). 
@@ -294,7 +321,7 @@ public:
      *                       Enforced to be between 1 and K, inclusive; 
      *                       otherwise, throws an invalid_argument exception.
      */
-    bool attempt_flip(int &cell_id, int &new_part);
+    bool attempt_flip(size_t &cell_id, size_t &new_part);
 
     /**
      * Setter for assignment member variable. 
@@ -302,18 +329,18 @@ public:
      * \param[in] (assignment) New assignments, as a vector of part IDs (1 to K) 
      *                         indexed by cell ID (0 to N-1)
      */
-    void set_assignment(vector<int> assignment) {
+    void set_assignment(vector<size_t> assignment) {
         this->assignment = assignment;
     }
 
     /** Getter for assignment member variable. */
-    vector<int> get_assignment() { return assignment; }
+    vector<size_t> get_assignment() { return assignment; }
 
     /** Returns the number of parts in the partition (i.e., member variable K). */
-    int num_parts() { return K; }
+    size_t num_parts() { return K; }
 
     /** Returns the number of cells in the graph (i.e., member variable N). */
-    int num_cells() { return N; }
+    size_t num_cells() { return N; }
 };
 }
 

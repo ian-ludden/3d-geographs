@@ -25,12 +25,12 @@ static_graph::static_graph() : size{0} {}
  * \param[in] (&edges) pointer to vector of Edge structs, using 0 to n-1 as vertex IDs.
  * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
  * */
-static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices)
+static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices)
     : size{number_of_vertices} {
     build_adjacency_lists(edges);
     // Assign default vertex names: 0 to size-1
     vertex_name.reserve(number_of_vertices); 
-    for (int i = 0; i < number_of_vertices; ++i) {
+    for (size_t i = 0; i < number_of_vertices; ++i) {
         vertex_name.push_back(std::to_string(i)); 
     }
 }
@@ -41,7 +41,7 @@ static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices)
  * \param[in] (number_of_vertices) number of vertices in the graph (a.k.a., 'n')
  * \param[in] (&vertex_names) pointer to vector of string names of vertices, in order. 
  * */
-static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices, const vector<string> &vertex_names)
+static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices, const vector<string> &vertex_names)
     : size{number_of_vertices}, vertex_name{vertex_names} {
     build_adjacency_lists(edges);
 }
@@ -52,7 +52,7 @@ static_graph::static_graph(const vector<Edge> &edges, int number_of_vertices, co
  * from the first vertex in the list. 
  * \param[in] (vertices) pointer to vector of vertex indices (not their string names)
  * */
-bool static_graph::is_connected_subgraph(vector<int> &vertices) {
+bool static_graph::is_connected_subgraph(vector<size_t> &vertices) {
     if (vertices.size() <= 0) return false; // For our purposes, the empty graph is not connected
 
     vector<bool> is_found(this->size, false); // Indicator vector for visited vertices
@@ -60,12 +60,12 @@ bool static_graph::is_connected_subgraph(vector<int> &vertices) {
     for (auto &vertex: vertices) is_available[vertex] = true;
 
     // Run BFS starting from the first vertex
-    std::queue<int> frontier;
+    std::queue<size_t> frontier;
     is_found[vertices[0]] = true;
     frontier.push(vertices[0]);
 
     while (!frontier.empty()) {
-        int current_vertex = frontier.front();
+        size_t current_vertex = frontier.front();
         frontier.pop();
 
         // Add unvisited neighbors to the queue if in the induced subgraph
@@ -79,7 +79,7 @@ bool static_graph::is_connected_subgraph(vector<int> &vertices) {
 
     // Did we find them all? 
     bool all_found = true;
-    for (int i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         // Need to negate logical XOR(is_available, is_found)
         all_found = all_found && !(is_available[i] != is_found[i]); 
     }
@@ -117,14 +117,14 @@ gg3d::static_graph gg3d::static_graph::induced_subgraph(vector<string> &vertex_n
     // Find edges to add from adjacency lists of vertices in induced subgraph
     for (size_t i = 0; i < indices.size(); ++i) {
         // i is the new index, indices[i] is the old index
-        vector<int> adj_list_i = adjacency_list[indices[i]];
+        vector<size_t> adj_list_i = adjacency_list[indices[i]];
         for (auto & j_id_old : adj_list_i) {
             // Check whether j_id_old is a vertex in the induced subgraph. 
             // If so, determine its new id, and add the edge from i to j.
             vector<size_t>::iterator it = find(indices.begin(), indices.end(), j_id_old);
             if (it != indices.end()) {
-                int j_id_new = it - indices.begin();
-                gg3d::Edge edge = {(int) i, j_id_new};
+                size_t j_id_new = it - indices.begin();
+                gg3d::Edge edge = {i, j_id_new};
                 edges.push_back(edge);
             }
         }

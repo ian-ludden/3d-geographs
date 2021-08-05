@@ -170,7 +170,7 @@ private:
     /** A map of cell IDs to part assignments, indexed 1 to K */
     vector<size_t> assignment;
     /** List of lists of neighbor IDs; primary index is cell ID. Includes wall neighbors (-1 through -6)*/
-    vector<vector<size_t>> neighbors;
+    vector<vector<int>> neighbors;
     /** List of lists of augmented neighbors; primary index is cell ID */
     vector<vector<augmented_neighbor>> aug_neighbors;
     /** List of cell vertices */

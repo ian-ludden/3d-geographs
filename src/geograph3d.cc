@@ -82,20 +82,18 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     // Read each row and store info for that cell
     while (in_file >> row) {
         vector<int> cell_neighbors_ints; // Temp list of neighbor IDs as type int
-        vector<size_t> cell_neighbors; // Temp list of neighbor IDs as type size_t
+        vector<int> cell_neighbors; // Temp list of neighbor IDs as type size_t
     //     vector<int> cell_aug_neighbors; // Temp list of augmented neighbor IDs
         cell_id = stoi(row[0]);
         // num_neighbors = stoi(row[1]);
-        cell_neighbors_ints = delimited_list_to_vector_of_int(row[2], ' ');
-        for (auto &cell_neighbor_int : cell_neighbors_ints) {
-            cell_neighbors.push_back((size_t) cell_neighbor_int);
-        }
+        cell_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
         
         neighbors.push_back(cell_neighbors);
 
         // Add new edges (i.e., to neighbors with greater ID)
-        for (auto &neighbor_id : cell_neighbors) {
-            if (cell_id < neighbor_id) g_edges.push_back({cell_id, neighbor_id});
+        for (int &neighbor_id : cell_neighbors) {
+            // Omit negative IDs, which represent walls
+            if ((int) cell_id < neighbor_id) g_edges.push_back({cell_id, (size_t) neighbor_id});
         }
 
         cout << "Processing cell ID = " << cell_id << "\n";
@@ -181,7 +179,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
                 for (size_t v_index = 0; v_index < face_vertex_indices.size(); ++v_index) {
                     size_t first_v_id = vertex_ids_vec[face_vertex_indices[v_index]];
                     size_t second_v_id = (v_index == face_vertex_indices.size() - 1) ? 
-                        0 : vertex_ids_vec[face_vertex_indices[v_index + 1]];
+                        vertex_ids_vec[face_vertex_indices[0]] : vertex_ids_vec[face_vertex_indices[v_index + 1]];
 
                     cell_edge e(cell_edges.size());
                     e.vertices.push_back(first_v_id);
@@ -278,7 +276,58 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
             }
         }
     }
+
+    // // Check summary measurements of aug neighborhoods and vertices/edges/faces
+    // int degree_freq[30];
+
+    // // Count degrees of units with respect to augmented neighborhood
+    // for (size_t i = 0; i < 30; ++i) degree_freq[i] = 0;
+
+    // for (size_t i = 0; i < N; ++i) {
+    //     size_t degree = aug_neighbors[i].size();
+    //     degree_freq[degree] = degree_freq[degree] + 1;
+    // }
+    // cout << "Frequencies of augmented neighborhood sizes:\n";
+    // for (size_t i = 0; i < 30; ++i) cout << "\t" << i << ": " << degree_freq[i] << " units.\n";
+
+
+    // // Count degrees of vertices
+    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
+
+    // for (size_t i = 0; i < cell_vertices.size(); ++i) {
+    //     cell_vertex current_vtx = cell_vertices[i];
+    //     int degree = current_vtx.edges.size();
+    //     degree_freq[degree] = degree_freq[degree] + 1;
+    // }
+
+    // // Count # edges per face
+    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
     
+    // for (size_t i = 0; i < cell_faces.size(); ++i) {
+    //     cell_face current_face = cell_faces[i];
+    //     int degree = current_face.edges.size();
+    //     degree_freq[degree] = degree_freq[degree] + 1;
+    // }
+
+    // // Count # vertices per face
+    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
+    
+    // for (size_t i = 0; i < cell_faces.size(); ++i) {
+    //     cell_face current_face = cell_faces[i];
+    //     int degree = current_face.vertices.size();
+    //     degree_freq[degree] = degree_freq[degree] + 1;
+    // }
+
+    // // Count # faces per edge
+    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
+    
+    // for (size_t i = 0; i < cell_edges.size(); ++i) {
+    //     cell_edge current_edge = cell_edges[i];
+    //     int degree = current_edge.faces.size();
+    //     degree_freq[degree] = degree_freq[degree] + 1;
+    // }
+
+    // cout << "end of constructor.\n";
 
     // // Construct surface dual graphs
     // for (int cell_id = 0; cell_id < N; ++cell_id) {

@@ -179,10 +179,6 @@ private:
     vector<cell_edge> cell_edges;
     /** List of cell faces */
     vector<cell_face> cell_faces;
-    /** List of surface poset graphs indexed by cell ID
-     * TODO: initialize in constructor
-     */
-    vector<static_graph> surface_graphs;
 
     /** 
      * List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
@@ -214,7 +210,7 @@ private:
 
         is_adjacent_to_singleton.resize(N, false);
         num_wall_neighbors.resize(N, 0);
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             for (auto & i_neighbor : this->neighbors[i]) {
                 if (i_neighbor < 0) ++num_wall_neighbors[i];
             }
@@ -222,7 +218,7 @@ private:
         
         while (singleton_zone_cells.size() < (size_t) K - 1) {
             int new_singleton_index = -1;
-            for (int i = 0; i < N; ++i) {
+            for (size_t i = 0; i < N; ++i) {
                 if (!is_adjacent_to_singleton[i]) {
                     if (new_singleton_index < 0 
                         || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {

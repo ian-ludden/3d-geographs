@@ -31,9 +31,6 @@ int main(int argc, char *argv[]) {
 
     cout << in_filename << "\n";
 
-    string converted_filename = "geograph_in_3x3x3.csv";
-    convert_output_csv(in_filename, converted_filename);
-
     // Read test cases from CSV file
     csv_row row;
     string test_cases_filename = "test_attempt_flip_cases.csv";
@@ -50,23 +47,23 @@ int main(int argc, char *argv[]) {
     while(curr_test_case < num_test_cases) {
         test_cases_file >> row;
         string test_id = row[0];
-        int num_parts = stoi(row[1]);
-        int cell_id = stoi(row[2]);
-        int new_part = stoi(row[3]);
+        size_t num_parts = stoi(row[1]);
+        size_t cell_id = stoi(row[2]);
+        size_t new_part = stoi(row[3]);
         string expected_result_str = row[4]; // Given as "TRUE" or "FALSE"
         bool expected_result = (expected_result_str.compare("TRUE") == 0);
         
-        vector<int> init_assignment;
+        vector<size_t> init_assignment;
         init_assignment.resize(27, num_parts); // 3x3x3 uniform grid used for all test cases
 
-        for (int part = 1; part < num_parts; ++part) { // Don't need last part, can leave as default
+        for (size_t part = 1; part < num_parts; ++part) { // Don't need last part, can leave as default
             vector<int> part_cell_ids = delimited_list_to_vector_of_int(row[4 + part], ' ');
             for (auto & id : part_cell_ids) {
                 init_assignment[id] = part;
             }
         }
 
-        gg3d::geograph3d geograph = gg3d::geograph3d(converted_filename, num_parts);
+        gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, num_parts);
         geograph.set_assignment(init_assignment);
 
         bool result = geograph.attempt_flip(cell_id, new_part);

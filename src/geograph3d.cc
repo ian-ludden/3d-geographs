@@ -77,13 +77,12 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     // size_t num_neighbors;
 
     neighbors.reserve(N);
-    aug_neighbors.reserve(N);
+    aug_neighbors.resize(N);
 
     // Read each row and store info for that cell
     while (in_file >> row) {
         vector<int> cell_neighbors_ints; // Temp list of neighbor IDs as type int
         vector<int> cell_neighbors; // Temp list of neighbor IDs as type size_t
-    //     vector<int> cell_aug_neighbors; // Temp list of augmented neighbor IDs
         cell_id = stoi(row[0]);
         // num_neighbors = stoi(row[1]);
         cell_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
@@ -95,8 +94,6 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
             // Omit negative IDs, which represent walls
             if ((int) cell_id < neighbor_id) g_edges.push_back({cell_id, (size_t) neighbor_id});
         }
-
-        cout << "Processing cell ID = " << cell_id << "\n";
 
         // Parse and index the (unique) vertices, checking for duplicates
         string vertices_string = (string) row[4];
@@ -370,82 +367,30 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     //     aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
     // }
 
-    // // Now that all member variables are initialized, create initial assignment
-    // generate_initial_assignment();
+    // Now that all member variables are initialized, create initial assignment
+    generate_initial_assignment();
 }
 
-// bool geograph3d::attempt_flip(int &cell_id, int &new_part) {
-//     // Validate new_part (must be between 1 and K, inclusive)
-//     if (new_part < 1 || new_part > K) {
-//         throw std::invalid_argument("New part must be between 1 and K.");
-//     }
+/** TODO: Implement attempt_flip with new conditions */
+bool geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
+    // Validate new_part (must be between 1 and K, inclusive)
+    if (new_part < 1 || new_part > K) {
+        throw std::invalid_argument("New part must be between 1 and K, inclusive.");
+    }
 
-//     // Start by checking conditions (2) and (3), since expected to be faster
-//     // (linear in size of surface graph, which is approx. number of neighbors, 
-//     // vs. linear in number of augmented neighbors for condition (1)).
-//     // TODO: Somehow keep track of *which* conditions fail over random iterations 
-//     //       and possibly use results to decide what order to check conditions. 
-//     //       Currently printing (to std::cout) which condition failed; may want to return an enum result 
-//     //       (success, cond 1 fail, cond 2 fail, cond 3 fail).
+    /** TODO: Somehow keep track of *which* conditions fail over random iterations 
+     *        and possibly use results to decide what order to check conditions. 
+     *        Currently printing (to std::cout) which condition failed; 
+     *        may want to return an enum result 
+     *        (success, cond 1 fail, cond 2 fail, cond 3 fail, etc.). */
     
-//     // Conditions (2) and (3): Surface dual graphs w.r.t. old and new parts
-//     vector<int> neighbors = g.adjacency_list[cell_id];
-//     vector<int> old_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining old part
-//     vector<int> new_part_face_ids; // IDs of faces (vertices in surface dual graph) adjoining new part
-//     vector<int> old_complement_face_ids; // Complement of old_part_face_ids w.r.t. set of surface dual vertex IDs
-//     vector<int> new_complement_face_ids; // Complement of new_part_face_ids w.r.t. set of surface dual vertex IDs
+    /** TODO: Check all five conditions, return false/enum on failure */
 
-//     for (int face_id = 0; face_id < surface_dual[cell_id].size; ++face_id) {
-//         string neighbor_name = surface_dual[cell_id].vertex_name[face_id];
-//         int neighbor_id = stoi(neighbor_name);
-//         int neighbor_part = assignment[neighbor_id];
-//         // Old part, or complement?
-//         if (neighbor_part == assignment[cell_id]) {
-//             old_part_face_ids.push_back(face_id);
-//         } else {
-//             old_complement_face_ids.push_back(face_id);
-//         }
-//         // New part, or complement?
-//         if (neighbor_part == new_part) {
-//             new_part_face_ids.push_back(face_id);
-//         } else {
-//             new_complement_face_ids.push_back(face_id);
-//         }
-//     }
+    assignment[cell_id] = new_part; // Flip succeeded, so update assignment
+    return true;
+} /** end attempt_flip */
 
-//     // Check condition (2)
-//     if (!(surface_dual[cell_id].is_connected_subgraph(old_part_face_ids)) 
-//         || !(surface_dual[cell_id].is_connected_subgraph(old_complement_face_ids))) {
-//         cout << "Failed condition (2).\n";
-//         return false;
-//     }
-
-//     // Check condition (3)
-//     if (!(surface_dual[cell_id].is_connected_subgraph(new_part_face_ids)) 
-//         || !(surface_dual[cell_id].is_connected_subgraph(new_complement_face_ids))) {
-//         cout << "Failed condition (3).\n";
-//         return false;
-//     }
-    
-//     // Condition (1): Induced subgraph condition
-//     static_graph subgraph = aug_neighbor_graph[cell_id];
-//     vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of old part neighbors
-//     for (int i = 0; i < subgraph.size; ++i) {
-//         int vertex_id = stoi(subgraph.vertex_name[i]);
-//         if (assignment[vertex_id] == assignment[cell_id]) {
-//             old_part_neighbor_new_ids.push_back(i);
-//         }
-//     }
-//     if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
-//         cout << "Failed condition (1).\n";
-//         return false;
-//     }
-
-//     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
-//     return true;
-// }
-
-}
+} /** end namespace gg3d */
 
 // // Quick test of cell_vertex constructor and "==" operator. 
 // int main(int argc, char *argv[]) {
@@ -466,91 +411,91 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
 
 
 /** Uncomment below to run interactive program allowing user to give flips to attempt */
-int main(int argc, char *argv[]) {
-    string in_filename;
-    int K;
+// int main(int argc, char *argv[]) {
+//     string in_filename;
+//     int K;
     
-    if (argc >= 3) {
-        in_filename = argv[1];
-        K = std::stoi(argv[2]);
-    } else {
-        string prog_name = argv[0];
-        if (prog_name.empty()) prog_name = "<program name>";
-        cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
-        return 0;
-    }
+//     if (argc >= 3) {
+//         in_filename = argv[1];
+//         K = std::stoi(argv[2]);
+//     } else {
+//         string prog_name = argv[0];
+//         if (prog_name.empty()) prog_name = "<program name>";
+//         cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
+//         return 0;
+//     }
 
-    gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
+//     gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
 
-    // Summarize geo-graph
-    cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
-    cout << "partitioned into " << geograph.num_parts() << " parts.\n";
+//     // Summarize geo-graph
+//     cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
+//     cout << "partitioned into " << geograph.num_parts() << " parts.\n";
 
-    // Summarize cell adjacency graph
-    size_t count_g_edges = 0;
-    for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
-    count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
+//     // Summarize cell adjacency graph
+//     size_t count_g_edges = 0;
+//     for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
+//     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
-    // // Spot-check surface dual graphs
-    // int cell_id = 0;
-    // cout << "The surface dual graph for cell " << cell_id;
-    // cout << " has " << geograph.surface_dual[cell_id].size << " vertices and ";
-    // size_t count_edges = 0;
-    // for (auto & adj_list : geograph.surface_dual[cell_id].adjacency_list) count_edges += adj_list.size();
-    // count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    // cout << count_edges << " edges.\n";
-    // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    // for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
-    // cout << "\n\n";
+//     // // Spot-check surface dual graphs
+//     // int cell_id = 0;
+//     // cout << "The surface dual graph for cell " << cell_id;
+//     // cout << " has " << geograph.surface_dual[cell_id].size << " vertices and ";
+//     // size_t count_edges = 0;
+//     // for (auto & adj_list : geograph.surface_dual[cell_id].adjacency_list) count_edges += adj_list.size();
+//     // count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     // cout << count_edges << " edges.\n";
+//     // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     // for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
+//     // cout << "\n\n";
 
-    // cell_id = 111;
-    // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    // for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
-    // cout << "\n\n";
+//     // cell_id = 111;
+//     // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     // for (auto & name : geograph.surface_dual[cell_id].vertex_name) cout << " " << name;
+//     // cout << "\n\n";
 
-    // // Spot-check induced augmented neighborhood subgraphs
-    // cell_id = 0;
-    // cout << "The augmented neighborhood induced subgraph for cell " << cell_id;
-    // cout << " has " << geograph.aug_neighbor_graph[cell_id].size << " vertices and ";
-    // count_edges = 0;
-    // for (auto & adj_list : geograph.aug_neighbor_graph[cell_id].adjacency_list) count_edges += adj_list.size();
-    // count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    // cout << count_edges << " edges.\n";
-    // cout << "The names of the vertices of the augmented neighborhood induced subgraph for cell " << cell_id << " are";
-    // for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
-    // cout << "\n\n";
+//     // // Spot-check induced augmented neighborhood subgraphs
+//     // cell_id = 0;
+//     // cout << "The augmented neighborhood induced subgraph for cell " << cell_id;
+//     // cout << " has " << geograph.aug_neighbor_graph[cell_id].size << " vertices and ";
+//     // count_edges = 0;
+//     // for (auto & adj_list : geograph.aug_neighbor_graph[cell_id].adjacency_list) count_edges += adj_list.size();
+//     // count_edges = count_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     // cout << count_edges << " edges.\n";
+//     // cout << "The names of the vertices of the augmented neighborhood induced subgraph for cell " << cell_id << " are";
+//     // for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+//     // cout << "\n\n";
 
-    // cell_id = 111;
-    // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
-    // for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
-    // cout << "\n\n";
+//     // cell_id = 111;
+//     // cout << "The names of the vertices of the surface dual graph for cell " << cell_id << " are";
+//     // for (auto & name : geograph.aug_neighbor_graph[cell_id].vertex_name) cout << " " << name;
+//     // cout << "\n\n";
 
-    // // Attempt flips    
-    // string response = "Y";
-    // while (response[0] == 'Y' || response[0] == 'y') {
-    //     cout << "Enter the name of the unit/cell to be flipped: ";
-    //     string name;
-    //     std::cin >> name;
-    //     cell_id = stoi(name);
-    //     int part = geograph.get_assignment()[cell_id];
-    //     cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
-    //     cout << "Enter the name of its new part: ";
-    //     std::cin >> name;
-    //     int new_part = stoi(name);
-    //     bool success = geograph.attempt_flip(cell_id, new_part);
-    //     if (success) {
-    //         cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
-    //     } else {
-    //         cout << "Flip failed.\n";
-    //     }
+//     // // Attempt flips    
+//     // string response = "Y";
+//     // while (response[0] == 'Y' || response[0] == 'y') {
+//     //     cout << "Enter the name of the unit/cell to be flipped: ";
+//     //     string name;
+//     //     std::cin >> name;
+//     //     cell_id = stoi(name);
+//     //     int part = geograph.get_assignment()[cell_id];
+//     //     cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+//     //     cout << "Enter the name of its new part: ";
+//     //     std::cin >> name;
+//     //     int new_part = stoi(name);
+//     //     bool success = geograph.attempt_flip(cell_id, new_part);
+//     //     if (success) {
+//     //         cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
+//     //     } else {
+//     //         cout << "Flip failed.\n";
+//     //     }
         
-    //     cout << "Try another flip? (Y/N) ";
-    //     std::cin >> response;
-    // }
+//     //     cout << "Try another flip? (Y/N) ";
+//     //     std::cin >> response;
+//     // }
 
-    string response;
-    cout << "enter any text to close. ";
-    std::cin >> response;
-    cout << response;
-}
+//     string response;
+//     cout << "enter any text to close. ";
+//     std::cin >> response;
+//     cout << response;
+// }

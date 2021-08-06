@@ -179,6 +179,10 @@ private:
     vector<cell_edge> cell_edges;
     /** List of cell faces */
     vector<cell_face> cell_faces;
+    /** List of surface poset graphs indexed by cell ID
+     * TODO: initialize in constructor
+     */
+    vector<static_graph> surface_graphs;
 
     /** 
      * List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
@@ -203,88 +207,55 @@ private:
      * Among cells with maximum number of wall neighbors satisfying the conditions, 
      * the cell with least index is chosen. 
      */
-    // void generate_initial_assignment() {
-    //     vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
-    //     vector<int> num_wall_neighbors; // Number of neighbors of each cell that are walls
-    //     vector<int> singleton_zone_cells; // Indices of cells used to create singleton zones
+    void generate_initial_assignment() {
+        vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
+        vector<int> num_wall_neighbors; // Number of neighbors of each cell that are walls
+        vector<int> singleton_zone_cells; // Indices of cells used to create singleton zones
 
-    //     is_adjacent_to_singleton.resize(N, false);
-    //     num_wall_neighbors.resize(N, 0);
-    //     for (int i = 0; i < N; ++i) {
-    //         for (auto & i_neighbor : this->neighbors[i]) {
-    //             if (i_neighbor < 0) ++num_wall_neighbors[i];
-    //         }
-    //     }
+        is_adjacent_to_singleton.resize(N, false);
+        num_wall_neighbors.resize(N, 0);
+        for (int i = 0; i < N; ++i) {
+            for (auto & i_neighbor : this->neighbors[i]) {
+                if (i_neighbor < 0) ++num_wall_neighbors[i];
+            }
+        }
         
-    //     while (singleton_zone_cells.size() < (size_t) K - 1) {
-    //         int new_singleton_index = -1;
-    //         for (int i = 0; i < N; ++i) {
-    //             if (!is_adjacent_to_singleton[i]) {
-    //                 if (new_singleton_index < 0 
-    //                     || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
-    //                     // Check condition (1) of attempt_flip
-    //                     static_graph subgraph = aug_neighbor_graph[i];
-    //                     vector<int> old_part_neighbor_new_ids; // New IDs (in aug neighborhood subgraph) of other cells from old part
-    //                     for (int i = 0; i < subgraph.size; ++i) {
-    //                         int vertex_id = stoi(subgraph.vertex_name[i]);
-    //                         // Make sure the old part aug neighbor is not a singleton zone
-    //                         vector<int>::iterator it = std::find(singleton_zone_cells.begin(), singleton_zone_cells.end(), vertex_id);
-    //                         if (it == singleton_zone_cells.end()) {
-    //                             old_part_neighbor_new_ids.push_back(i);
-    //                         }
-    //                     }
-    //                     if (!subgraph.is_connected_subgraph(old_part_neighbor_new_ids)) {
-    //                         continue;
-    //                     }
+        while (singleton_zone_cells.size() < (size_t) K - 1) {
+            int new_singleton_index = -1;
+            for (int i = 0; i < N; ++i) {
+                if (!is_adjacent_to_singleton[i]) {
+                    if (new_singleton_index < 0 
+                        || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
+                        (void)0;
+                    }
+                }
+            }
 
-    //                     // Check condition (2) of attempt_flip w.r.t. default (remainder) zone. 
-    //                     // All nonnegative neighbors are currently in the default zone. 
-    //                     vector<int> old_part_face_ids;
-    //                     vector<int> old_complement_face_ids;
-    //                     for (int face_id = 0; face_id < surface_dual[i].size; ++face_id) {
-    //                         string neighbor_name = surface_dual[i].vertex_name[face_id];
-    //                         int neighbor_id = stoi(neighbor_name);
-    //                         if (neighbor_id >= 0) {
-    //                             old_part_face_ids.push_back(face_id);
-    //                         } else {
-    //                             old_complement_face_ids.push_back(face_id);
-    //                         }
-    //                     }
-    //                     if (surface_dual[i].is_connected_subgraph(old_part_face_ids) 
-    //                         && surface_dual[i].is_connected_subgraph(old_complement_face_ids)) {
-    //                         new_singleton_index = i; // Pick this singleton for now. 
-    //                                                  // Could replace if a later cell 
-    //                                                  // has more wall neighbors. 
-    //                     }
-    //                 }
-    //             }
-    //         }
+            if (new_singleton_index < 0) {
+                std::cout << "Failed to find a valid new singleton zone. Found " << singleton_zone_cells.size() << " so far:";
+                for (auto & singleton : singleton_zone_cells) {
+                    std::cout << "\t" << singleton << "\n";
+                }
+                std::cout << "\n";
+                return;
+                // Alternative: throw "Failed to find a valid new singleton zone.";
+            }
+            singleton_zone_cells.push_back(new_singleton_index);
+            is_adjacent_to_singleton[new_singleton_index] = true; // Consider singleton adjacent to itself to remove from candidates
+            for (auto & neighbor_id : g.adjacency_list[new_singleton_index]) {
+                is_adjacent_to_singleton[neighbor_id] = true; // Remove non-wall neighbors from candidates
+            }
+        }
 
-    //         if (new_singleton_index < 0) {
-    //             std::cout << "Failed to find a valid new singleton zone. Found " << singleton_zone_cells.size() << " so far:";
-    //             for (auto & singleton : singleton_zone_cells) {
-    //                 std::cout << "\t" << singleton << "\n";
-    //             }
-    //             std::cout << "\n";
-    //             return;
-    //             // Alternative: throw "Failed to find a valid new singleton zone.";
-    //         }
-    //         singleton_zone_cells.push_back(new_singleton_index);
-    //         is_adjacent_to_singleton[new_singleton_index] = true; // Consider singleton adjacent to itself to remove from candidates
-    //         for (auto & neighbor_id : g.adjacency_list[new_singleton_index]) {
-    //             is_adjacent_to_singleton[neighbor_id] = true; // Remove non-wall neighbors from candidates
-    //         }
-    //     }
-
-    //     // Populate & set initial assignment
-    //     vector<int> init_assignment;
-    //     init_assignment.resize(N, 1);
-    //     int zone_index = 2;
-    //     for (auto & singleton : singleton_zone_cells) {
-    //         init_assignment[singleton] = zone_index++;
-    //     }
-    //     set_assignment(init_assignment);
-    // };
+        // Populate & set initial assignment
+        vector<size_t> init_assignment;
+        init_assignment.resize(N, 1);
+        size_t zone_index = 2;
+        for (auto & singleton : singleton_zone_cells) {
+            init_assignment[singleton] = zone_index++;
+        }
+        set_assignment(init_assignment);
+    };
 
 public:
     /** 

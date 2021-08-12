@@ -8,6 +8,7 @@
 #include <bitset>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -28,11 +29,29 @@ augmented_neighbor::augmented_neighbor(const size_t id) : id{id} {}
  */
 cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} {}
 
+/** Setter for is_boundary private member variable */
+void cell_vertex::set_is_boundary(bool new_is_boundary) {
+    this->is_boundary = new_is_boundary;
+}
+/** Getter for is_boundary private member variable */
+bool cell_vertex::get_is_boundary() {
+    return this->is_boundary;
+}
+
 /** Constructor for cell_edge. 
  * 
  * \param[in] (id) The id of the cell edge. 
  */
 cell_edge::cell_edge(size_t id) : id{id} {}
+
+/** Setter for is_boundary private member variable */
+void cell_edge::set_is_boundary(bool new_is_boundary) {
+    this->is_boundary = new_is_boundary;
+}
+/** Getter for is_boundary private member variable */
+bool cell_edge::get_is_boundary() {
+    return this->is_boundary;
+}
 
 /** Constructor for cell_face. 
  * 
@@ -367,7 +386,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     //     aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
     // }
 
-    /** TODO: Create surface poset graph for each cell */
+    /** Create surface poset graph for each cell */
     for (size_t i = 0; i < N; ++i) {
         vector<string> node_names; 
         vector<Edge> sp_edges;
@@ -432,22 +451,89 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
 }
 
 /** TODO: Implement attempt_flip with new conditions */
-bool geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
+flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     // Validate new_part (must be between 1 and K, inclusive)
     if (new_part < 1 || new_part > K) {
         throw std::invalid_argument("New part must be between 1 and K, inclusive.");
     }
 
-    /** TODO: Somehow keep track of *which* conditions fail over random iterations 
-     *        and possibly use results to decide what order to check conditions. 
-     *        Currently printing (to std::cout) which condition failed; 
-     *        may want to return an enum result 
-     *        (success, cond 1 fail, cond 2 fail, cond 3 fail, etc.). */
+    /** Construct S_1, the set of shared faces, edges, and vertices 
+     * between the cell to flip and its current (i.e., giving) zone */
+    std::set<string> S_1_vertices;
+    std::set<string> S_1_edges;
+    std::set<string> S_1_faces;
+    for (auto &aug_neighbor : aug_neighbors[cell_id]) {
+        if (assignment[aug_neighbor.id] != assignment[cell_id]) continue;
+        vector<size_t> shared_vertices = aug_neighbor.shared_vertices;
+        for (auto &shared_vertex_id : shared_vertices) {
+            string vertex_name_str = "v" + std::to_string(shared_vertex_id);
+            S_1_vertices.insert(vertex_name_str);
+        }
+        vector<size_t> shared_edges = aug_neighbor.shared_edges;
+        for (auto &shared_edge_id : shared_edges) {
+            string edge_name_str = "e" + std::to_string(shared_edge_id);
+            S_1_edges.insert(edge_name_str);
+        }
+        vector<size_t> shared_faces = aug_neighbor.shared_faces;
+        for (auto &shared_face_id : shared_faces) {
+            string face_name_str = "f" + std::to_string(shared_face_id);
+            S_1_faces.insert(face_name_str);
+        }
+    }
+
+    // Combine shared elements of each dimension to get S_1
+    vector<string> S_1;
+
+    for (auto &S_1_vertex : S_1_vertices) S_1.push_back(S_1_vertex);
+    for (auto &S_1_edge : S_1_edges) S_1.push_back(S_1_edge);
+    for (auto &S_1_face : S_1_faces) S_1.push_back(S_1_face);
+
+    /** Construct X_v, the set of vertices/edges on the surface of cell v 
+     * and the surface of v's current (giving) zone */
+    // vector<string> X_v;
+    // for (auto &vertex_name : S_1_vertices) {
+    //     size_t vertex_index = std::stoi(vertex_name.substr(1, vertex_name.size()));
+    //     if (cell_vertices[vertex_index].get_is_boundary()) {
+    //         X_v.push_back(vertex_name);
+    //     }
+    // }
+    // for (auto &edge_name : S_1_edges) {
+    //     size_t edge_index = std::stoi(edge_name.substr(1, edge_name.size()));
+    //     if (cell_edges[edge_index].get_is_boundary()) {
+    //         X_v.push_back(edge_name);
+    //     }
+    // }
+
+    /** TODO: Construct Y_v, the set of nodes representing edges and vertices 
+     * on the boundary of the shared surface */
+    // Not clear how to do this part
+
+    /** TODO: Check all five conditions, 
+     * returning flip_status::fail_[i] 
+     * if condition (i) fails. 
+     */
+
+    /** TODO: Check condition (1): S_1 ∩ X_v = Y_v */
+
+
+    /** Check condition (2):  G_v[S_1] is connected */
+    bool satisfies_condition_2 = surface_poset_graphs[cell_id].is_connected_subgraph(S_1);
+    if (!satisfies_condition_2) return flip_status::fail_2;
+
+    /** TODO: Check condition (3):  */
+    bool satisfies_condition_3 = false;
+    if (!satisfies_condition_3) return flip_status::fail_3;
     
-    /** TODO: Check all five conditions, return false/enum on failure */
+    /** TODO: Check condition (4):  */
+    bool satisfies_condition_4 = false;
+    if (!satisfies_condition_4) return flip_status::fail_4;
+
+    /** TODO: Check condition (5):  */
+    bool satisfies_condition_5 = false;
+    if (!satisfies_condition_5) return flip_status::fail_5;
 
     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
-    return true;
+    return flip_status::success;
 } /** end attempt_flip */
 
 } /** end namespace gg3d */
@@ -497,6 +583,13 @@ int main(int argc, char *argv[]) {
     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
     cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
+    // Print cell part assignments
+    cout << "Current assignments:\n";
+    vector<size_t> current_assignment = geograph.get_assignment();
+    for (size_t i = 0; i < current_assignment.size(); ++i) {
+        cout << i << " to part " << current_assignment[i] << "\n";
+    }
+
     // Spot-check surface poset graphs (check that of cell 0)
     gg3d::static_graph spg0 = geograph.surface_poset_graphs[0];
     cout << "Surface poset graph of cell 0 (" << spg0.size << " nodes) has edges:\n";
@@ -511,31 +604,34 @@ int main(int argc, char *argv[]) {
     }
     cout << "\n";
 
-    // // Attempt flips    
-    // string response = "Y";
-    // while (response[0] == 'Y' || response[0] == 'y') {
-    //     cout << "Enter the name of the unit/cell to be flipped: ";
-    //     string name;
-    //     std::cin >> name;
-    //     cell_id = stoi(name);
-    //     int part = geograph.get_assignment()[cell_id];
-    //     cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
-    //     cout << "Enter the name of its new part: ";
-    //     std::cin >> name;
-    //     int new_part = stoi(name);
-    //     bool success = geograph.attempt_flip(cell_id, new_part);
-    //     if (success) {
-    //         cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << geograph.get_assignment()[cell_id] << ".\n";
-    //     } else {
-    //         cout << "Flip failed.\n";
-    //     }
+    // Attempt flips    
+    size_t cell_id;
+    string response = "Y";
+    while (response[0] == 'Y' || response[0] == 'y') {
+        cout << "Enter the name of the unit/cell to be flipped: ";
+        string name;
+        std::cin >> name;
+        cell_id = stoi(name);
+        current_assignment = geograph.get_assignment();
+        size_t part = current_assignment[cell_id];
+        cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+        cout << "Enter the name of its new part: ";
+        std::cin >> name;
+        size_t new_part = stoi(name);
+        gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
+        if (result == gg3d::flip_status::success) {
+            cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << new_part << ".\n";
+        } else {
+            cout << "Flip failed with status " << gg3d::flip_status_name[result] << ".\n";
+        }
         
-    //     cout << "Try another flip? (Y/N) ";
-    //     std::cin >> response;
-    // }
+        cout << "Try another flip? (Y/N) ";
+        std::cin >> response;
+    }
 
-    string response;
-    cout << "enter any text to close. ";
-    std::cin >> response;
-    cout << response;
-}
+    /** Uncomment below if attempt flips block above is commented out */
+    // string response;
+    // cout << "enter any text to close. ";
+    // std::cin >> response;
+    // cout << response;
+} /** end main */

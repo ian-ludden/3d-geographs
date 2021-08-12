@@ -5,7 +5,6 @@
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
-#include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -13,6 +12,17 @@ using std::string;
 using std::vector;
 
 namespace gg3d {
+/** \brief Enum for result of geograph3d::attempt_flip. 
+ * 
+ * This class enumerates the possible statuses of a flip attempt.  
+ * The status "fail_[i]" indicates that condition (i) has failed, 
+ * for (i) in 1 through 5. 
+ * The status "success" means the flip has succeeded and 
+ * the geograph3d object has been updated accordingly. 
+ */
+enum flip_status { fail_1, fail_2, fail_3, fail_4, fail_5, success };
+const char *flip_status_name[] = { "fail_1", "fail_2", "fail_3", "fail_4", "fail_5", "success" };
+
 /** \brief Class representing an augmented neighbor. 
  * 
  * This is a class representing an augmented neighbor of 
@@ -21,11 +31,9 @@ namespace gg3d {
  * the shared faces of each dimension. 
  */
 class augmented_neighbor {
-private:
+public:
     /** Cell ID of the augmented neighbor */
     const size_t id;
-    
-public:
     /** IDs of the vertices shared with the augmented_neighbor */
     vector<size_t> shared_vertices;
     /** IDs of the edges shared with the augmented_neighbor */
@@ -54,6 +62,8 @@ class cell_vertex {
 private:
     /** Tolerance for comparing vertex coordinates. See operator == */
     const double tol = 1.0e-10;
+    /** Flag for whether the vertex lies on a zone boundary */
+    bool is_boundary;
 
 public:
     /** Unique ID of the vertex (0-face) */
@@ -83,6 +93,10 @@ public:
         }
         return true;
     }
+    /** Setter for is_boundary private member variable */
+    void set_is_boundary(bool new_is_boundary);
+    /** Getter for is_boundary private member variable */
+    bool get_is_boundary();
 };
 
 /** \brief Class representing an edge (1-face) in 
@@ -96,6 +110,9 @@ public:
  * any faces (2-faces) in which the edge participates. 
  */
 class cell_edge {
+private:
+    /** Flag for whether the vertex lies on a zone boundary */
+    bool is_boundary;
 public:
     /** Unique ID of the edge (1-face) */
     const size_t id;
@@ -114,6 +131,11 @@ public:
         if (vertices.size() != 2) return false;
         return (vertices[0] == e.vertices[0]) && (vertices[1] == e.vertices[1]);
     }
+
+    /** Setter for is_boundary private member variable */
+    void set_is_boundary(bool new_is_boundary);
+    /** Getter for is_boundary private member variable */
+    bool get_is_boundary();
 };
 
 /** \brief Class representing a face (2-face) in 
@@ -222,19 +244,13 @@ private:
                 if (!is_adjacent_to_singleton[i]) {
                     if (new_singleton_index < 0 
                         || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
-                        (void)0;
+                        new_singleton_index = i;
                     }
                 }
             }
 
             if (new_singleton_index < 0) {
-                std::cout << "Failed to find a valid new singleton zone. Found " << singleton_zone_cells.size() << " so far:";
-                for (auto & singleton : singleton_zone_cells) {
-                    std::cout << "\t" << singleton << "\n";
-                }
-                std::cout << "\n";
-                return;
-                // Alternative: throw "Failed to find a valid new singleton zone.";
+                throw std::runtime_error("Failed to find a valid new singleton zone.");
             }
             singleton_zone_cells.push_back(new_singleton_index);
             is_adjacent_to_singleton[new_singleton_index] = true; // Consider singleton adjacent to itself to remove from candidates
@@ -288,7 +304,7 @@ public:
      *                       Enforced to be between 1 and K, inclusive; 
      *                       otherwise, throws an invalid_argument exception.
      */
-    bool attempt_flip(size_t &cell_id, size_t &new_part);
+    flip_status attempt_flip(size_t &cell_id, size_t &new_part);
 
     /**
      * Setter for assignment member variable. 

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <queue>
+#include <unordered_map>
 #include <vector>
 using std::string;
 using std::vector;
@@ -31,7 +32,9 @@ static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices)
     // Assign default vertex names: 0 to size-1
     vertex_name.reserve(number_of_vertices); 
     for (size_t i = 0; i < number_of_vertices; ++i) {
-        vertex_name.push_back(std::to_string(i)); 
+        string i_name = std::to_string(i);
+        vertex_name.push_back(i_name);
+        map_names_to_ids.insert(name_map::value_type(i_name, i));
     }
 }
 
@@ -44,6 +47,9 @@ static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices)
 static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices, const vector<string> &vertex_names)
     : size{number_of_vertices}, vertex_name{vertex_names} {
     build_adjacency_lists(edges);
+    for (size_t i = 0; i < size; ++i) {
+        map_names_to_ids.insert(name_map::value_type(vertex_name[i], i));
+    }
 }
 
 /**
@@ -51,7 +57,7 @@ static_graph::static_graph(const vector<Edge> &edges, size_t number_of_vertices,
  * is connected, using a standard breadth-first search (BFS) 
  * from the first vertex in the list. 
  * \param[in] (vertices) pointer to vector of vertex indices (not their string names)
- * */
+ */
 bool static_graph::is_connected_subgraph(vector<size_t> &vertices) {
     if (vertices.size() <= 0) return false; // For our purposes, the empty graph is not connected
 
@@ -85,6 +91,20 @@ bool static_graph::is_connected_subgraph(vector<size_t> &vertices) {
     }
 
     return all_found;
+}
+
+/**
+ * Check whether the induced subgraph of the given list of vertex names 
+ * is connected. First converts the names to indices, then calls 
+ * the is_connected_subgraph function that takes vertex indices. 
+ * \param[in] (subgraph_vertex_names) pointer to vector of vertex names (not their IDs/indices)
+ */
+bool static_graph::is_connected_subgraph(vector<string> &subgraph_vertex_names) {
+    vector<size_t> vertex_indices;
+    for (auto &name : subgraph_vertex_names) {
+        vertex_indices.push_back(this->get_index_of_name(name));
+    }
+    return is_connected_subgraph(vertex_indices);
 }
 
 }
@@ -131,6 +151,17 @@ gg3d::static_graph gg3d::static_graph::induced_subgraph(vector<string> &vertex_n
     }
 
     return gg3d::static_graph(edges, (int) vertex_names.size(), vertex_names);
+}
+
+/**
+ * Converts a vertex name (string) 
+ * to a vertex id (local index, of type size_t). 
+ * 
+ * \param[in] (vertex_name) string name of vertex
+ * \return the size_t local index of the vertex with the given name
+ */
+size_t gg3d::static_graph::get_index_of_name(string &vertex_name) {
+    return map_names_to_ids.at(vertex_name);
 }
 
 // /**

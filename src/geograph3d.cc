@@ -490,19 +490,19 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
     /** Construct X_v, the set of vertices/edges on the surface of cell v 
      * and the surface of v's current (giving) zone */
-    // vector<string> X_v;
-    // for (auto &vertex_name : S_1_vertices) {
-    //     size_t vertex_index = std::stoi(vertex_name.substr(1, vertex_name.size()));
-    //     if (cell_vertices[vertex_index].get_is_boundary()) {
-    //         X_v.push_back(vertex_name);
-    //     }
-    // }
-    // for (auto &edge_name : S_1_edges) {
-    //     size_t edge_index = std::stoi(edge_name.substr(1, edge_name.size()));
-    //     if (cell_edges[edge_index].get_is_boundary()) {
-    //         X_v.push_back(edge_name);
-    //     }
-    // }
+    vector<string> X_v;
+    for (auto &vertex_name : S_1_vertices) {
+        size_t vertex_index = std::stoi(vertex_name.substr(1, vertex_name.size()));
+        if (cell_vertices[vertex_index].get_is_boundary()) {
+            X_v.push_back(vertex_name);
+        }
+    }
+    for (auto &edge_name : S_1_edges) {
+        size_t edge_index = std::stoi(edge_name.substr(1, edge_name.size()));
+        if (cell_edges[edge_index].get_is_boundary()) {
+            X_v.push_back(edge_name);
+        }
+    }
 
     /** TODO: Construct Y_v, the set of nodes representing edges and vertices 
      * on the boundary of the shared surface */

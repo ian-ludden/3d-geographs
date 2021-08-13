@@ -5,9 +5,10 @@
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
+#include <algorithm>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <algorithm>
 using std::string;
 using std::vector;
 

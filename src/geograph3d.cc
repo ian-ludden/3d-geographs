@@ -484,7 +484,7 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
     /** Construct Y_v, the set of nodes representing edges and vertices 
      * on the boundary of the shared surface */
-    vector<string> Y_v = boundary_vertices_and_edges_of_shared_surface(S_1);
+    vector<string> Y_v = boundary_vertices_and_edges_of_shared_surface(cell_id, S_1);
 
 
     /** TODO: Check all five conditions, 

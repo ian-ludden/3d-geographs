@@ -450,7 +450,6 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     generate_initial_assignment();
 }
 
-/** TODO: Implement attempt_flip with new conditions */
 flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     // Validate new_part (must be between 1 and K, inclusive)
     if (new_part < 1 || new_part > K) {
@@ -459,31 +458,10 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
     /** Construct S_1, the set of shared faces, edges, and vertices 
      * between the cell to flip and its current (i.e., giving) zone */
-    std::set<string> S_1_vertices;
-    std::set<string> S_1_edges;
-    std::set<string> S_1_faces;
-    for (auto &aug_neighbor : aug_neighbors[cell_id]) {
-        if (assignment[aug_neighbor.id] != assignment[cell_id]) continue;
-        vector<size_t> shared_vertices = aug_neighbor.shared_vertices;
-        for (auto &shared_vertex_id : shared_vertices) {
-            string vertex_name_str = "v" + std::to_string(shared_vertex_id);
-            S_1_vertices.insert(vertex_name_str);
-        }
-        vector<size_t> shared_edges = aug_neighbor.shared_edges;
-        for (auto &shared_edge_id : shared_edges) {
-            string edge_name_str = "e" + std::to_string(shared_edge_id);
-            S_1_edges.insert(edge_name_str);
-        }
-        vector<size_t> shared_faces = aug_neighbor.shared_faces;
-        for (auto &shared_face_id : shared_faces) {
-            string face_name_str = "f" + std::to_string(shared_face_id);
-            S_1_faces.insert(face_name_str);
-        }
-    }
-
-    // Combine shared elements of each dimension to get S_1
     vector<string> S_1;
-
+    std::set<string> S_1_vertices = shared_elements_with_part(cell_id, assignment[cell_id], 0);
+    std::set<string> S_1_edges = shared_elements_with_part(cell_id, assignment[cell_id], 1);
+    std::set<string> S_1_faces = shared_elements_with_part(cell_id, assignment[cell_id], 2);
     for (auto &S_1_vertex : S_1_vertices) S_1.push_back(S_1_vertex);
     for (auto &S_1_edge : S_1_edges) S_1.push_back(S_1_edge);
     for (auto &S_1_face : S_1_faces) S_1.push_back(S_1_face);
@@ -504,9 +482,10 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
         }
     }
 
-    /** TODO: Construct Y_v, the set of nodes representing edges and vertices 
+    /** Construct Y_v, the set of nodes representing edges and vertices 
      * on the boundary of the shared surface */
-    // Not clear how to do this part
+    vector<string> Y_v = boundary_vertices_and_edges_of_shared_surface(S_1);
+
 
     /** TODO: Check all five conditions, 
      * returning flip_status::fail_[i] 
@@ -514,7 +493,12 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
      */
 
     /** TODO: Check condition (1): S_1 ∩ X_v = Y_v */
-
+    vector<string> S_1_intersect_X_v; 
+    std::set_intersection(S_1.begin(), S_1.end(), X_v.begin(), X_v.end(), S_1_intersect_X_v);
+    // Sort both vectors so that == operator can be used to check equality
+    std::sort(S_1_intersect_X_v.begin(), S_1_intersect_X_v.end());
+    std::sort(Y_v.begin(), Y_v.end());
+    if (S_1_intersect_X_v != Y_v) return flip_status::fail_1;
 
     /** Check condition (2):  G_v[S_1] is connected */
     bool satisfies_condition_2 = surface_poset_graphs[cell_id].is_connected_subgraph(S_1);

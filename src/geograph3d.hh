@@ -6,6 +6,8 @@
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
 #include <algorithm>
+#include <queue>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -269,6 +271,102 @@ private:
         }
         set_assignment(init_assignment);
     };
+
+    /**
+     * Computes the shared elements (vertices, edges, faces) of 
+     * a given cell with augmented neighbors in a given part. 
+     * 
+     * \param[in] (cell_id) The ID of the cell
+     * \param[in] (part) The ID of the part (1 to K) with which we want the shared elements
+     * \param[in] (dimension) 0 for vertices, 1 for edges, 2 for faces
+     * 
+     * \return A std::set<string> of the descriptive names of the elements, i.e., 
+     *         vXX for vertices, eXX for edges, fXX for faces, where XX is the element's ID
+     */
+    std::set<string> shared_elements_with_part(size_t cell_id, size_t part, uint8_t dimension) {
+        std::set<string> shared_elements;
+        for (auto &aug_neighbor : aug_neighbors[cell_id]) {
+            if (assignment[aug_neighbor.id] != part) continue;
+            vector<size_t> shared_elements_indices;
+            if (dimension == 0) {
+                shared_elements_indices = aug_neighbor.shared_vertices;
+            } else if (dimension == 1) {
+                shared_elements_indices = aug_neighbor.shared_edges;
+            } else if (dimension == 2) {
+                shared_elements_indices = aug_neighbor.shared_faces;
+            } else {
+                throw std::invalid_argument("Invalid argument: dimension must be 0, 1, or 2.");
+            }
+            for (auto &shared_element_index : shared_elements_indices) {
+                string name_str = "v" + std::to_string(shared_element_index);
+                shared_elements.insert(name_str);
+            }
+        }
+        return shared_elements;
+    }
+
+    /**
+     * Computes Y_v, the vertices and edges on the boundary of the shared surface between 
+     * a cell and a part. 
+     * 
+     * The function starts by marking all nodes in the cell's surface poset graph, G_v, that are in S_1, 
+     * the shared surface. It then performs a breadth-first search over these shared nodes, 
+     * computing for each edge-node its degree in the induced subgraph G_v[S_1]. 
+     * Edges with degree 3 (two vertices from the endpoints, and one of the two faces) 
+     * must be on the boundary. 
+     * 
+     * Vertices on the boundary are then found by taking the union of the endpoints of the boundary edges. 
+     */
+    vector<string> boundary_vertices_and_edges_of_shared_surface(size_t &cell_id, vector<string> &shared_element_names) {
+        if (shared_element_names.size() <= 0) throw std::invalid_argument("shared_element_names cannot be empty.");
+
+        static_graph g_v = surface_poset_graphs[cell_id];
+        vector<string> boundary_edges;
+        vector<bool> is_found(shared_element_names.size(), false); // Indicator vector for visited nodes
+        vector<bool> is_boundary(shared_element_names.size(), false); // Indicator vector for visited nodes
+        vector<bool> is_available(shared_element_names.size(), false); // Indicator vector for nodes in the induced subgraph
+        vector<size_t> node_id(shared_element_names.size());
+        for (size_t i = 0; i < shared_element_names.size(); ++i) {
+            node_id[i] = g_v.get_index_of_name(shared_element_names[i]);
+            is_available[node_id[i]] = true;
+        }
+
+        // Run BFS starting from the first node
+        std::queue<size_t> frontier;
+        is_found[node_id[0]] = true;
+        frontier.push(node_id[0]);
+
+        while (!frontier.empty()) {
+            size_t current_node = frontier.front();
+            frontier.pop();
+
+            string node_name = g_v.vertex_name[current_node];
+            
+            size_t count_neighbors_in_shared_surface = 0;
+
+            // Add unvisited neighbors to the queue if in the induced subgraph
+            for (auto &neighbor_node: g_v.adjacency_list[current_node]) {
+                if (is_available[neighbor_node] && !is_found[neighbor_node]) {
+                    is_found[neighbor_node] = true;
+                    frontier.push(neighbor_node);
+                }
+                if (is_available[neighbor_node]) {
+                    count_neighbors_in_shared_surface++;
+                }
+            }
+
+            // Add degree-3 edge-nodes in G_v[S_1] to boundary_edges
+            if (node_name[0] == 'e' && count_neighbors_in_shared_surface == 3) {
+                boundary_edges.push_back(node_name);
+            }
+        }
+
+        /** TODO: Compute boundary_vertices, return union with boundary_edges */
+        vector<string> boundary_vertices(10, "temp");
+        vector<string> boundary_vertices_and_edges;
+        std::set_union(boundary_edges.begin(), boundary_edges.end(), boundary_vertices.begin(), boundary_vertices.end(), boundary_vertices_and_edges);
+        return boundary_vertices_and_edges;
+    }
 
 public:
     /** 

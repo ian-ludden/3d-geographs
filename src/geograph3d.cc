@@ -303,16 +303,17 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
         } 
     }
 
-    for (auto &e : cell_edges) {
+    for (size_t i = 0; i < cell_edges.size(); ++i) {
+        cell_edge e = cell_edges[i];
         cell_vertex v0 = cell_vertices[e.vertices[0]];
         cell_vertex v1 = cell_vertices[e.vertices[1]];
         for (size_t dimension = 0; dimension < 3; ++dimension) {
             if (v0.pos[dimension] == v1.pos[dimension] 
                 && (v0.pos[dimension] <= min[dimension] 
                     || v0.pos[dimension] >= max[dimension])) {
-                e.set_is_boundary(true);
-                v0.set_is_boundary(true);
-                v1.set_is_boundary(true);
+                cell_edges[i].set_is_boundary(true);
+                cell_vertices[v0.id].set_is_boundary(true);
+                cell_vertices[v1.id].set_is_boundary(true);
             }
         }
     }
@@ -583,7 +584,7 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     vector<string> S_1_edges_and_faces;
     std::set_union(S_1_edges_sorted.begin(), S_1_edges_sorted.end(), 
                    S_1_faces_sorted.begin(), S_1_faces_sorted.end(),
-                   S_1_edges_and_faces.begin());
+                   std::back_inserter(S_1_edges_and_faces));
 
     vector<string> all_edges;
     vector<string> all_faces;
@@ -642,7 +643,7 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     vector<string> S_2_edges_and_faces;
     std::set_union(S_2_edges_sorted.begin(), S_2_edges_sorted.end(), 
                    S_2_faces_sorted.begin(), S_2_faces_sorted.end(),
-                   S_2_edges_and_faces.begin());
+                   std::back_inserter(S_2_edges_and_faces));
 
     vector<string> S_2_edges_complement;
     std::set_difference(all_edges.begin(), all_edges.end(),
@@ -657,7 +658,7 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     vector<string> S_2_edges_and_faces_complement;
     std::set_union(S_2_edges_complement.begin(), S_2_edges_complement.end(), 
                    S_2_faces_complement.begin(), S_2_faces_complement.end(),
-                   S_2_edges_and_faces_complement.begin());
+                   std::back_inserter(S_2_edges_and_faces_complement));
     bool satisfies_condition_5 = surface_poset_graphs[cell_id].is_connected_subgraph(S_2_edges_and_faces)
                             &&   surface_poset_graphs[cell_id].is_connected_subgraph(S_2_edges_and_faces_complement);
     if (!satisfies_condition_5) return flip_status::fail_5;
@@ -675,6 +676,36 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     std::set_union(S_1_vertices_sorted.begin(), S_1_vertices_sorted.end(), 
                    S_1_edges_sorted.begin(), S_1_edges_sorted.end(),
                    std::back_inserter(S_1_vertices_and_edges));
+    std::set_difference(S_1_vertices_and_edges.begin(), S_1_vertices_and_edges.end(), 
+                        Y_v.begin(), Y_v.end(), 
+                        std::back_inserter(new_boundary_elements));
+
+    for (auto &element_name : new_boundary_elements) {
+        size_t index = std::stoul(element_name.substr(1, element_name.size()));
+        if (element_name[0] == 'v') {
+            cell_vertices[index].set_is_boundary(true);
+        } else { // Must be "eXX", by construction
+            cell_edges[index].set_is_boundary(true);
+        }
+    }
+
+    vector<string> new_internal_elements;
+    vector<string> S_2_vertices_and_edges;
+    std::set_union(S_2_vertices_sorted.begin(), S_2_vertices_sorted.end(),
+                   S_2_edges_sorted.begin(), S_2_edges_sorted.end(), 
+                   std::back_inserter(S_2_vertices_and_edges));
+    std::set_difference(S_2_vertices_and_edges.begin(), S_2_vertices_and_edges.end(), 
+                        Y_v.begin(), Y_v.end(), 
+                        std::back_inserter(new_internal_elements));
+
+    for (auto &element_name : new_internal_elements) {
+        size_t index = std::stoul(element_name.substr(1, element_name.size()));
+        if (element_name[0] == 'v') {
+            cell_vertices[index].set_is_boundary(false);
+        } else { // Must be "eXX", by construction
+            cell_edges[index].set_is_boundary(false);
+        }
+    }    
 
     return flip_status::success;
 } /** end attempt_flip */

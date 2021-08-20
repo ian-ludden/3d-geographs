@@ -283,11 +283,6 @@ private:
                 }
             }
         }
-
-        /** Check external status of first 20 edges, vertices */
-        for (size_t i = 0; i < 20; ++i) if (cell_vertices[i].get_is_boundary()) std::cout << "v" << i << " is on a zone boundary.\n";
-        std::cout << "\n";
-        for (size_t i = 0; i < 20; ++i) if (cell_edges[i].get_is_boundary()) std::cout << "e" << i << " is on a zone boundary.\n";
     };
 
     /**

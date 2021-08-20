@@ -318,99 +318,6 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
         }
     }
 
-    // // Check summary measurements of aug neighborhoods and vertices/edges/faces
-    // int degree_freq[30];
-
-    // // Count degrees of units with respect to augmented neighborhood
-    // for (size_t i = 0; i < 30; ++i) degree_freq[i] = 0;
-
-    // for (size_t i = 0; i < N; ++i) {
-    //     size_t degree = aug_neighbors[i].size();
-    //     degree_freq[degree] = degree_freq[degree] + 1;
-    // }
-    // cout << "Frequencies of augmented neighborhood sizes:\n";
-    // for (size_t i = 0; i < 30; ++i) cout << "\t" << i << ": " << degree_freq[i] << " units.\n";
-
-
-    // // Count degrees of vertices
-    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
-
-    // for (size_t i = 0; i < cell_vertices.size(); ++i) {
-    //     cell_vertex current_vtx = cell_vertices[i];
-    //     int degree = current_vtx.edges.size();
-    //     degree_freq[degree] = degree_freq[degree] + 1;
-    // }
-
-    // // Count # edges per face
-    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
-    
-    // for (size_t i = 0; i < cell_faces.size(); ++i) {
-    //     cell_face current_face = cell_faces[i];
-    //     int degree = current_face.edges.size();
-    //     degree_freq[degree] = degree_freq[degree] + 1;
-    // }
-
-    // // Count # vertices per face
-    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
-    
-    // for (size_t i = 0; i < cell_faces.size(); ++i) {
-    //     cell_face current_face = cell_faces[i];
-    //     int degree = current_face.vertices.size();
-    //     degree_freq[degree] = degree_freq[degree] + 1;
-    // }
-
-    // // Count # faces per edge
-    // for (size_t i = 0; i < 10; ++i) degree_freq[i] = 0;
-    
-    // for (size_t i = 0; i < cell_edges.size(); ++i) {
-    //     cell_edge current_edge = cell_edges[i];
-    //     int degree = current_edge.faces.size();
-    //     degree_freq[degree] = degree_freq[degree] + 1;
-    // }
-
-    // cout << "end of constructor.\n";
-
-    // // Construct surface dual graphs
-    // for (int cell_id = 0; cell_id < N; ++cell_id) {
-    //     vector<int> cell_neighbors = neighbors[cell_id];
-    //     vector<uint64_t> cell_faces = faces[cell_id];
-
-    //     vector<Edge> surface_dual_edges;
-    //     vector<string> surface_dual_vertex_names;
-        
-    //     for (size_t i = 0; i < cell_faces.size(); ++i) {
-    //         surface_dual_vertex_names.push_back(std::to_string(cell_neighbors[i]));
-
-    //         for (size_t j = i + 1; j < cell_faces.size(); ++j) {
-    //             size_t count_shared_vertices = std::bitset<64>{cell_faces[i] & cell_faces[j]}.count();
-    //             // Two faces on the surface share an edge if they share (exactly) two vertices. 
-    //             if (count_shared_vertices == 2) {
-    //                 Edge new_edge = {(int) i, (int) j};
-    //                 surface_dual_edges.push_back(new_edge);
-    //             }
-    //         }
-    //     }
-
-    //     surface_dual.push_back(gg3d::static_graph(surface_dual_edges,
-    //                            (int) cell_neighbors.size(),
-    //                            surface_dual_vertex_names));
-    // }
-
-    // // Construct augmented neighborhood induced subgraphs
-    // for (int cell_id = 0; cell_id < N; ++cell_id) {
-    //     vector<int> all_aug_neighbors(neighbors[cell_id]);
-    //     for (auto & aug_neighbor : aug_neighbors[cell_id]) all_aug_neighbors.push_back(aug_neighbor);
-
-    //     // Convert augmented neighbor IDs to names
-    //     vector<string> all_aug_neighbor_names = {};
-    //     for (auto & aug_neighbor_id : all_aug_neighbors) {
-    //         if (aug_neighbor_id < 0) continue; // Ignore walls (negative IDs)
-    //         all_aug_neighbor_names.push_back(g.vertex_name[aug_neighbor_id]);
-    //     }
-
-    //     aug_neighbor_graph.push_back(g.induced_subgraph(all_aug_neighbor_names));
-    // }
-
     /** Create surface poset graph for each cell */
     for (size_t i = 0; i < N; ++i) {
         vector<string> node_names; 
@@ -516,22 +423,14 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     }
     std::sort(X_v.begin(), X_v.end());
 
-    cout << "\nX_v contents:\n";
-    for (size_t i = 0; i < X_v.size(); ++i) cout << "\t" << X_v[i] << "\n";
-    cout << "\nS_1 contents:\n";
-    for (size_t i = 0; i < S_1.size(); ++i) cout << "\t" << S_1[i] << "\n";
-
     /** Construct Y_v, the set of nodes representing edges and vertices 
      * on the boundary of the shared surface. This function returns a sorted vector. */
-    vector<string> Y_v = boundary_vertices_and_edges_of_shared_surface(cell_id, S_1);
-
-    cout << "\nY_v contents:\n";
-    for (size_t i = 0; i < Y_v.size(); ++i) cout << "\t" << Y_v[i] << "\n";
-
-    cout << "\nAll vertices on cell " << cell_id << ":\n";
-    for (size_t i = 0; i < surface_poset_graphs[cell_id].size; ++i) {
-        string element_name = surface_poset_graphs[cell_id].vertex_name[i];
-        if (element_name[0] == 'v') cout << "\t" << element_name << "\n";
+    vector<string> Y_v;
+    try {
+        Y_v = boundary_vertices_and_edges_of_shared_surface(cell_id, S_1);
+    } catch (std::invalid_argument &invalid_arg_exception) {
+        std::cerr << invalid_arg_exception.what();
+        return flip_status::fail_1;
     }
 
     /** Check all five conditions, 
@@ -544,33 +443,6 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
                           X_v.begin(), X_v.end(), 
                           std::back_inserter(S_1_intersect_X_v));
 
-
-    for (size_t i = 0; i < S_1_edges_sorted.size(); ++i) {
-        string e_name = S_1_edges_sorted[i];
-        size_t e_index = std::stoul(e_name.substr(1, e_name.size()));
-        cell_edge e = cell_edges[e_index];
-        cout << "Edge " << e_name << " has endpoints " << e.vertices[0] << ", " << e.vertices[1] << ".\n";
-        if (e.get_is_boundary()) {
-            cout << "\tThis edge is on a zone boundary.\n";
-        } else {
-            cout << "\tThis edge is NOT on a zone boundary.\n";
-        }
-    }
-
-    for (size_t i = 0; i < S_1_vertices_sorted.size(); ++i) {
-        string v_name = S_1_vertices_sorted[i];
-        size_t v_index = std::stoul(v_name.substr(1, v_name.size()));
-        cell_vertex v = cell_vertices[v_index];
-        cout << "Vertex " << v_name << " is at position (" << v.pos[0] << ", " << v.pos[1] << ", " << v.pos[2] << ").\n";
-    }
-
-    for (size_t i = 0; i < aug_neighbors[0].size(); ++i) {
-        augmented_neighbor aug_neighbor = aug_neighbors[0][i];
-        cout << "Shared edges with augmented neighbor of cell 0: " << aug_neighbor.id << "\n";
-        for (size_t j = 0; j < aug_neighbor.shared_edges.size(); ++j) {
-            cout << "\t" << aug_neighbor.shared_edges[j] << "\n";
-        }
-    }
 
     // Both vectors are sorted, so == operator can be used to check equality
     if (S_1_intersect_X_v != Y_v) return flip_status::fail_1;
@@ -765,18 +637,18 @@ int main(int argc, char *argv[]) {
     }
 
     // Spot-check surface poset graphs (check that of cell 0)
-    gg3d::static_graph spg0 = geograph.surface_poset_graphs[0];
-    cout << "Surface poset graph of cell 0 (" << spg0.size << " nodes) has edges:\n";
-    cout << "\tEdge Src, Edge Dest\n";
-    for (size_t i = 0; i < spg0.adjacency_list.size(); ++i) {
-        string src_name = spg0.vertex_name[i];
-        for (size_t j = 0; j < spg0.adjacency_list[i].size(); ++j) {
-            string dest_name = spg0.vertex_name[spg0.adjacency_list[i][j]];
-            cout << "\t" << src_name << ",\t" << dest_name << "\n";
-        }
-        cout << "\n";
-    }
-    cout << "\n";
+    // gg3d::static_graph spg0 = geograph.surface_poset_graphs[0];
+    // cout << "Surface poset graph of cell 0 (" << spg0.size << " nodes) has edges:\n";
+    // cout << "\tEdge Src, Edge Dest\n";
+    // for (size_t i = 0; i < spg0.adjacency_list.size(); ++i) {
+    //     string src_name = spg0.vertex_name[i];
+    //     for (size_t j = 0; j < spg0.adjacency_list[i].size(); ++j) {
+    //         string dest_name = spg0.vertex_name[spg0.adjacency_list[i][j]];
+    //         cout << "\t" << src_name << ",\t" << dest_name << "\n";
+    //     }
+    //     cout << "\n";
+    // }
+    // cout << "\n";
 
     // Attempt flips    
     size_t cell_id;

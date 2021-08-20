@@ -537,11 +537,14 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
 
-    /** TODO: Update is_external flags of involved 
+    /** Update is_external flags of involved 
      * vertices, edges, and faces. 
      *  - Y_v remains external/boundary. 
      *  - S_1^0 ∪ S_1^1 \ Y_v becomes external/boundary. 
      *  - S_2^0 ∪ S_2^1 \ Y_v becomes internal/boundary. 
+     * TODO: These updates are not correct, find out where the bug is. 
+     *       Should be able to flip cell 1 to part 2 and then back to part 1, 
+     *       but it fails with status fail_1 when trying to flip back. 
      */
     vector<string> new_boundary_elements;
     vector<string> S_1_vertices_and_edges;
@@ -658,6 +661,9 @@ int main(int argc, char *argv[]) {
         string name;
         std::cin >> name;
         cell_id = stoi(name);
+        if (cell_id >= geograph.g.size) {
+            throw std::runtime_error("Provided cell id is out of bounds.");
+        }
         current_assignment = geograph.get_assignment();
         size_t part = current_assignment[cell_id];
         cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";

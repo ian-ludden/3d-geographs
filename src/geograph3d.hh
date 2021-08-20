@@ -6,6 +6,7 @@
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
 #include <algorithm>
+#include <iostream>
 #include <queue>
 #include <set>
 #include <stdexcept>
@@ -270,6 +271,23 @@ private:
             init_assignment[singleton] = zone_index++;
         }
         set_assignment(init_assignment);
+
+        /** Update is_external flags of cell vertices and edges */
+        for (auto & singleton : singleton_zone_cells) {
+            for (auto &aug_neighbor : aug_neighbors[singleton]) {
+                for (auto &vertex_id : aug_neighbor.shared_vertices) {
+                    cell_vertices[vertex_id].set_is_boundary(true);
+                }
+                for (auto &edge_id : aug_neighbor.shared_edges) {
+                    cell_edges[edge_id].set_is_boundary(true);
+                }
+            }
+        }
+
+        /** Check external status of first 20 edges, vertices */
+        for (size_t i = 0; i < 20; ++i) if (cell_vertices[i].get_is_boundary()) std::cout << "v" << i << " is on a zone boundary.\n";
+        std::cout << "\n";
+        for (size_t i = 0; i < 20; ++i) if (cell_edges[i].get_is_boundary()) std::cout << "e" << i << " is on a zone boundary.\n";
     };
 
     /**
@@ -298,7 +316,8 @@ private:
                 throw std::invalid_argument("Invalid argument: dimension must be 0, 1, or 2.");
             }
             for (auto &shared_element_index : shared_elements_indices) {
-                string name_str = "v" + std::to_string(shared_element_index);
+                string prefixes[3] = { "v", "e", "f" };
+                string name_str = prefixes[dimension] + std::to_string(shared_element_index);
                 shared_elements.insert(name_str);
             }
         }
@@ -361,10 +380,24 @@ private:
             }
         }
 
-        /** TODO: Compute boundary_vertices, return union with boundary_edges */
-        vector<string> boundary_vertices(10, "temp");
+        std::sort(boundary_edges.begin(), boundary_edges.end());
+
+        // Compute boundary_vertices
+        std::set<string> boundary_vertices_set;
+        for (auto &e : boundary_edges) {
+            size_t e_id = std::stoi(e.substr(1, e.size()));
+            for (auto &vertex_neighbor : cell_edges[e_id].vertices) {
+                string vertex_neighbor_name = "v" + std::to_string(vertex_neighbor);
+                boundary_vertices_set.insert(vertex_neighbor_name);
+            }
+        }
+
+        // Return union of boundary vertices and edges
+        vector<string> boundary_vertices{boundary_vertices_set.begin(), boundary_vertices_set.end()};
+        std::sort(boundary_vertices.begin(), boundary_vertices.end());
         vector<string> boundary_vertices_and_edges;
-        std::set_union(boundary_edges.begin(), boundary_edges.end(), boundary_vertices.begin(), boundary_vertices.end(), boundary_vertices_and_edges);
+        for (auto &boundary_edge : boundary_edges) boundary_vertices_and_edges.push_back(boundary_edge);
+        for (auto &boundary_vertex : boundary_vertices) boundary_vertices_and_edges.push_back(boundary_vertex);
         return boundary_vertices_and_edges;
     }
 

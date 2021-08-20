@@ -27,7 +27,7 @@ augmented_neighbor::augmented_neighbor(const size_t id) : id{id} {}
  * 
  * \param[in] (id) The id of the cell vertex. 
  */
-cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} {}
+cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} { is_boundary = false; }
 
 /** Setter for is_boundary private member variable */
 void cell_vertex::set_is_boundary(bool new_is_boundary) {
@@ -42,7 +42,7 @@ bool cell_vertex::get_is_boundary() {
  * 
  * \param[in] (id) The id of the cell edge. 
  */
-cell_edge::cell_edge(size_t id) : id{id} {}
+cell_edge::cell_edge(size_t id) : id{id} { is_boundary = false; }
 
 /** Setter for is_boundary private member variable */
 void cell_edge::set_is_boundary(bool new_is_boundary) {
@@ -293,6 +293,30 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
         }
     }
 
+    // Mark outer boundary edges/vertices as boundary
+    double min[3] = { __DBL_MAX__, __DBL_MAX__, __DBL_MAX__ };
+    double max[3] = { -__DBL_MAX__, -__DBL_MAX__, -__DBL_MAX__ };
+    for (auto &cell_vtx : cell_vertices) {
+        for (size_t dimension = 0; dimension < 3; ++dimension) {
+            if (cell_vtx.pos[dimension] < min[dimension]) min[dimension] = cell_vtx.pos[dimension];
+            if (cell_vtx.pos[dimension] > max[dimension]) max[dimension] = cell_vtx.pos[dimension];
+        } 
+    }
+
+    for (auto &e : cell_edges) {
+        cell_vertex v0 = cell_vertices[e.vertices[0]];
+        cell_vertex v1 = cell_vertices[e.vertices[1]];
+        for (size_t dimension = 0; dimension < 3; ++dimension) {
+            if (v0.pos[dimension] == v1.pos[dimension] 
+                && (v0.pos[dimension] <= min[dimension] 
+                    || v0.pos[dimension] >= max[dimension])) {
+                e.set_is_boundary(true);
+                v0.set_is_boundary(true);
+                v1.set_is_boundary(true);
+            }
+        }
+    }
+
     // // Check summary measurements of aug neighborhoods and vertices/edges/faces
     // int degree_freq[30];
 
@@ -465,6 +489,14 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     for (auto &S_1_vertex : S_1_vertices) S_1.push_back(S_1_vertex);
     for (auto &S_1_edge : S_1_edges) S_1.push_back(S_1_edge);
     for (auto &S_1_face : S_1_faces) S_1.push_back(S_1_face);
+    std::sort(S_1.begin(), S_1.end());
+
+    vector<string> S_1_vertices_sorted{S_1_vertices.begin(), S_1_vertices.end()};
+    std::sort(S_1_vertices_sorted.begin(), S_1_vertices_sorted.end());
+    vector<string> S_1_edges_sorted{S_1_edges.begin(), S_1_edges.end()};
+    std::sort(S_1_edges_sorted.begin(), S_1_edges_sorted.end());
+    vector<string> S_1_faces_sorted{S_1_faces.begin(), S_1_faces.end()};
+    std::sort(S_1_faces_sorted.begin(), S_1_faces_sorted.end());
 
     /** Construct X_v, the set of vertices/edges on the surface of cell v 
      * and the surface of v's current (giving) zone */
@@ -481,42 +513,169 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
             X_v.push_back(edge_name);
         }
     }
+    std::sort(X_v.begin(), X_v.end());
+
+    cout << "\nX_v contents:\n";
+    for (size_t i = 0; i < X_v.size(); ++i) cout << "\t" << X_v[i] << "\n";
+    cout << "\nS_1 contents:\n";
+    for (size_t i = 0; i < S_1.size(); ++i) cout << "\t" << S_1[i] << "\n";
 
     /** Construct Y_v, the set of nodes representing edges and vertices 
-     * on the boundary of the shared surface */
+     * on the boundary of the shared surface. This function returns a sorted vector. */
     vector<string> Y_v = boundary_vertices_and_edges_of_shared_surface(cell_id, S_1);
 
+    cout << "\nY_v contents:\n";
+    for (size_t i = 0; i < Y_v.size(); ++i) cout << "\t" << Y_v[i] << "\n";
 
-    /** TODO: Check all five conditions, 
+    cout << "\nAll vertices on cell " << cell_id << ":\n";
+    for (size_t i = 0; i < surface_poset_graphs[cell_id].size; ++i) {
+        string element_name = surface_poset_graphs[cell_id].vertex_name[i];
+        if (element_name[0] == 'v') cout << "\t" << element_name << "\n";
+    }
+
+    /** Check all five conditions, 
      * returning flip_status::fail_[i] 
-     * if condition (i) fails. 
-     */
+     * if condition (i) fails. */
 
-    /** TODO: Check condition (1): S_1 ∩ X_v = Y_v */
+    /** Check condition (1): S_1 ∩ X_v = Y_v */
     vector<string> S_1_intersect_X_v; 
-    std::set_intersection(S_1.begin(), S_1.end(), X_v.begin(), X_v.end(), S_1_intersect_X_v);
-    // Sort both vectors so that == operator can be used to check equality
-    std::sort(S_1_intersect_X_v.begin(), S_1_intersect_X_v.end());
-    std::sort(Y_v.begin(), Y_v.end());
+    std::set_intersection(S_1.begin(), S_1.end(), 
+                          X_v.begin(), X_v.end(), 
+                          std::back_inserter(S_1_intersect_X_v));
+
+
+    for (size_t i = 0; i < S_1_edges_sorted.size(); ++i) {
+        string e_name = S_1_edges_sorted[i];
+        size_t e_index = std::stoul(e_name.substr(1, e_name.size()));
+        cell_edge e = cell_edges[e_index];
+        cout << "Edge " << e_name << " has endpoints " << e.vertices[0] << ", " << e.vertices[1] << ".\n";
+        if (e.get_is_boundary()) {
+            cout << "\tThis edge is on a zone boundary.\n";
+        } else {
+            cout << "\tThis edge is NOT on a zone boundary.\n";
+        }
+    }
+
+    for (size_t i = 0; i < S_1_vertices_sorted.size(); ++i) {
+        string v_name = S_1_vertices_sorted[i];
+        size_t v_index = std::stoul(v_name.substr(1, v_name.size()));
+        cell_vertex v = cell_vertices[v_index];
+        cout << "Vertex " << v_name << " is at position (" << v.pos[0] << ", " << v.pos[1] << ", " << v.pos[2] << ").\n";
+    }
+
+    for (size_t i = 0; i < aug_neighbors[0].size(); ++i) {
+        augmented_neighbor aug_neighbor = aug_neighbors[0][i];
+        cout << "Shared edges with augmented neighbor of cell 0: " << aug_neighbor.id << "\n";
+        for (size_t j = 0; j < aug_neighbor.shared_edges.size(); ++j) {
+            cout << "\t" << aug_neighbor.shared_edges[j] << "\n";
+        }
+    }
+
+    // Both vectors are sorted, so == operator can be used to check equality
     if (S_1_intersect_X_v != Y_v) return flip_status::fail_1;
 
     /** Check condition (2):  G_v[S_1] is connected */
     bool satisfies_condition_2 = surface_poset_graphs[cell_id].is_connected_subgraph(S_1);
     if (!satisfies_condition_2) return flip_status::fail_2;
 
-    /** TODO: Check condition (3):  */
-    bool satisfies_condition_3 = false;
+    /** Check condition (3): G_v[S_1^1 ∪ S_1^2] and 
+     * G_v[V_v^1 \ S_1^1 ∪ V_v^2 \ S_1^2] are connected */
+    vector<string> S_1_edges_and_faces;
+    std::set_union(S_1_edges_sorted.begin(), S_1_edges_sorted.end(), 
+                   S_1_faces_sorted.begin(), S_1_faces_sorted.end(),
+                   S_1_edges_and_faces.begin());
+
+    vector<string> all_edges;
+    vector<string> all_faces;
+    for (auto &node_name : surface_poset_graphs[cell_id].vertex_name) {
+        if (node_name[0] == 'e') {
+            all_edges.push_back(node_name);
+        } else if (node_name[0] == 'f') {
+            all_faces.push_back(node_name);
+        } else { (void) 0; } // Pass, i.e., ignore vertices
+    }
+    std::sort(all_edges.begin(), all_edges.end());
+    std::sort(all_faces.begin(), all_faces.end());
+
+    vector<string> S_1_edges_complement;
+    std::set_difference(all_edges.begin(), all_edges.end(),
+                        S_1_edges_sorted.begin(), S_1_edges_sorted.end(),
+                        std::back_inserter(S_1_edges_complement));
+
+    vector<string> S_1_faces_complement;
+    std::set_difference(all_faces.begin(), all_faces.end(),
+                        S_1_faces_sorted.begin(), S_1_faces_sorted.end(),
+                        std::back_inserter(S_1_faces_complement));
+
+    vector<string> S_1_edges_and_faces_complement;
+    std::set_union(S_1_edges_complement.begin(), S_1_edges_complement.end(), 
+                   S_1_faces_complement.begin(), S_1_faces_complement.end(),
+                   std::back_inserter(S_1_edges_and_faces_complement));
+
+    bool satisfies_condition_3 = surface_poset_graphs[cell_id].is_connected_subgraph(S_1_edges_and_faces)
+                            &&   surface_poset_graphs[cell_id].is_connected_subgraph(S_1_edges_and_faces_complement);
     if (!satisfies_condition_3) return flip_status::fail_3;
     
-    /** TODO: Check condition (4):  */
-    bool satisfies_condition_4 = false;
+    /** Construct S_2, the set of shared faces, edges, and vertices 
+     * between the cell to flip and its new (i.e., receiving) zone */
+    vector<string> S_2;
+    std::set<string> S_2_vertices = shared_elements_with_part(cell_id, new_part, 0);
+    std::set<string> S_2_edges = shared_elements_with_part(cell_id, new_part, 1);
+    std::set<string> S_2_faces = shared_elements_with_part(cell_id, new_part, 2);
+    for (auto &S_2_vertex : S_2_vertices) S_2.push_back(S_2_vertex);
+    for (auto &S_2_edge : S_2_edges) S_2.push_back(S_2_edge);
+    for (auto &S_2_face : S_2_faces) S_2.push_back(S_2_face);
+
+    vector<string> S_2_vertices_sorted{S_2_vertices.begin(), S_2_vertices.end()};
+    std::sort(S_2_vertices_sorted.begin(), S_2_vertices_sorted.end());
+    vector<string> S_2_edges_sorted{S_2_edges.begin(), S_2_edges.end()};
+    std::sort(S_2_edges_sorted.begin(), S_2_edges_sorted.end());
+    vector<string> S_2_faces_sorted{S_2_faces.begin(), S_2_faces.end()};
+    std::sort(S_2_faces_sorted.begin(), S_2_faces_sorted.end());
+
+    /** Check condition (4): G_v[S_2] is connected */
+    bool satisfies_condition_4 = surface_poset_graphs[cell_id].is_connected_subgraph(S_2);
     if (!satisfies_condition_4) return flip_status::fail_4;
 
-    /** TODO: Check condition (5):  */
-    bool satisfies_condition_5 = false;
+    /** Check condition (5): G_v[S_2^1 ∪ S_2^2] and 
+     * G_v[V_v^1 \ S_2^1 ∪ V_v^2 \ S_2^2] are connected */
+    vector<string> S_2_edges_and_faces;
+    std::set_union(S_2_edges_sorted.begin(), S_2_edges_sorted.end(), 
+                   S_2_faces_sorted.begin(), S_2_faces_sorted.end(),
+                   S_2_edges_and_faces.begin());
+
+    vector<string> S_2_edges_complement;
+    std::set_difference(all_edges.begin(), all_edges.end(),
+                        S_2_edges_sorted.begin(), S_2_edges_sorted.end(),
+                        std::back_inserter(S_2_edges_complement));
+
+    vector<string> S_2_faces_complement;
+    std::set_difference(all_faces.begin(), all_faces.end(),
+                        S_2_faces_sorted.begin(), S_2_faces_sorted.end(),
+                        std::back_inserter(S_2_faces_complement));
+
+    vector<string> S_2_edges_and_faces_complement;
+    std::set_union(S_2_edges_complement.begin(), S_2_edges_complement.end(), 
+                   S_2_faces_complement.begin(), S_2_faces_complement.end(),
+                   S_2_edges_and_faces_complement.begin());
+    bool satisfies_condition_5 = surface_poset_graphs[cell_id].is_connected_subgraph(S_2_edges_and_faces)
+                            &&   surface_poset_graphs[cell_id].is_connected_subgraph(S_2_edges_and_faces_complement);
     if (!satisfies_condition_5) return flip_status::fail_5;
 
     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
+
+    /** TODO: Update is_external flags of involved 
+     * vertices, edges, and faces. 
+     *  - Y_v remains external/boundary. 
+     *  - S_1^0 ∪ S_1^1 \ Y_v becomes external/boundary. 
+     *  - S_2^0 ∪ S_2^1 \ Y_v becomes internal/boundary. 
+     */
+    vector<string> new_boundary_elements;
+    vector<string> S_1_vertices_and_edges;
+    std::set_union(S_1_vertices_sorted.begin(), S_1_vertices_sorted.end(), 
+                   S_1_edges_sorted.begin(), S_1_edges_sorted.end(),
+                   std::back_inserter(S_1_vertices_and_edges));
+
     return flip_status::success;
 } /** end attempt_flip */
 

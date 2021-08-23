@@ -1,7 +1,7 @@
 /** 
  * \file geograph3d.hh
  * \brief Header file for geograph3d. */
-
+#pragma once
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
@@ -15,10 +15,9 @@
 using std::string;
 using std::vector;
 
-namespace gg3d {
 /** \brief Enum for result of geograph3d::attempt_flip. 
  * 
- * This class enumerates the possible statuses of a flip attempt.  
+ * This enum comprises the possible statuses of a flip attempt.  
  * The status "fail_[i]" indicates that condition (i) has failed, 
  * for (i) in 1 through 5. 
  * The status "success" means the flip has succeeded and 
@@ -27,6 +26,7 @@ namespace gg3d {
 enum flip_status { fail_1, fail_2, fail_3, fail_4, fail_5, success };
 const char *flip_status_name[] = { "fail_1", "fail_2", "fail_3", "fail_4", "fail_5", "success" };
 
+namespace gg3d {
 /** \brief Class representing an augmented neighbor. 
  * 
  * This is a class representing an augmented neighbor of 

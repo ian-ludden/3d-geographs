@@ -16,6 +16,9 @@
 using std::string;
 using std::vector;
 
+/** Names for each of the enum values in flip_status */
+const char *flip_status_name[] = { "fail_1", "fail_2", "fail_3", "fail_4", "fail_5", "success" };
+
 namespace gg3d {
 /** Constructor for augmented_neighbor. 
  * 
@@ -640,84 +643,84 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
 
 /** Uncomment below to run interactive program allowing user to give flips to attempt */
-int main(int argc, char *argv[]) {
-    string in_filename;
-    int K;
+// int main(int argc, char *argv[]) {
+//     string in_filename;
+//     int K;
     
-    if (argc >= 3) {
-        in_filename = argv[1];
-        K = std::stoi(argv[2]);
-    } else {
-        string prog_name = argv[0];
-        if (prog_name.empty()) prog_name = "<program name>";
-        cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
-        return 0;
-    }
+//     if (argc >= 3) {
+//         in_filename = argv[1];
+//         K = std::stoi(argv[2]);
+//     } else {
+//         string prog_name = argv[0];
+//         if (prog_name.empty()) prog_name = "<program name>";
+//         cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
+//         return 0;
+//     }
 
-    gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
+//     gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
 
-    // Summarize geo-graph
-    cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
-    cout << "partitioned into " << geograph.num_parts() << " parts.\n";
+//     // Summarize geo-graph
+//     cout << "The given 3-D geo-graph contains " << geograph.num_cells() << " cells ";
+//     cout << "partitioned into " << geograph.num_parts() << " parts.\n";
 
-    // Summarize cell adjacency graph
-    size_t count_g_edges = 0;
-    for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
-    count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
-    cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
+//     // Summarize cell adjacency graph
+//     size_t count_g_edges = 0;
+//     for (auto & adj_list : geograph.g.adjacency_list) count_g_edges += adj_list.size();
+//     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
+//     cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
-    // Print cell part assignments
-    cout << "Current assignments:\n";
-    vector<size_t> current_assignment = geograph.get_assignment();
-    for (size_t i = 0; i < current_assignment.size(); ++i) {
-        cout << i << " to part " << current_assignment[i] << "\n";
-    }
+//     // Print cell part assignments
+//     cout << "Current assignments:\n";
+//     vector<size_t> current_assignment = geograph.get_assignment();
+//     for (size_t i = 0; i < current_assignment.size(); ++i) {
+//         cout << i << " to part " << current_assignment[i] << "\n";
+//     }
 
-    // Spot-check surface poset graphs (check that of cell 0)
-    // gg3d::static_graph spg0 = geograph.surface_poset_graphs[0];
-    // cout << "Surface poset graph of cell 0 (" << spg0.size << " nodes) has edges:\n";
-    // cout << "\tEdge Src, Edge Dest\n";
-    // for (size_t i = 0; i < spg0.adjacency_list.size(); ++i) {
-    //     string src_name = spg0.vertex_name[i];
-    //     for (size_t j = 0; j < spg0.adjacency_list[i].size(); ++j) {
-    //         string dest_name = spg0.vertex_name[spg0.adjacency_list[i][j]];
-    //         cout << "\t" << src_name << ",\t" << dest_name << "\n";
-    //     }
-    //     cout << "\n";
-    // }
-    // cout << "\n";
+//     // Spot-check surface poset graphs (check that of cell 0)
+//     // gg3d::static_graph spg0 = geograph.surface_poset_graphs[0];
+//     // cout << "Surface poset graph of cell 0 (" << spg0.size << " nodes) has edges:\n";
+//     // cout << "\tEdge Src, Edge Dest\n";
+//     // for (size_t i = 0; i < spg0.adjacency_list.size(); ++i) {
+//     //     string src_name = spg0.vertex_name[i];
+//     //     for (size_t j = 0; j < spg0.adjacency_list[i].size(); ++j) {
+//     //         string dest_name = spg0.vertex_name[spg0.adjacency_list[i][j]];
+//     //         cout << "\t" << src_name << ",\t" << dest_name << "\n";
+//     //     }
+//     //     cout << "\n";
+//     // }
+//     // cout << "\n";
 
-    // Attempt flips    
-    size_t cell_id;
-    string response = "Y";
-    while (response[0] == 'Y' || response[0] == 'y') {
-        cout << "Enter the name of the unit/cell to be flipped: ";
-        string name;
-        std::cin >> name;
-        cell_id = stoi(name);
-        if (cell_id >= geograph.g.size) {
-            throw std::runtime_error("Provided cell id is out of bounds.");
-        }
-        current_assignment = geograph.get_assignment();
-        size_t part = current_assignment[cell_id];
-        cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
-        cout << "Enter the name of its new part: ";
-        std::cin >> name;
-        size_t new_part = stoi(name);
-        gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
-        if (result == gg3d::flip_status::success) {
-            cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << new_part << ".\n";
-        } else {
-            cout << "Flip failed with status " << gg3d::flip_status_name[result] << ".\n";
-        }
+//     // Attempt flips    
+//     size_t cell_id;
+//     string response = "Y";
+//     while (response[0] == 'Y' || response[0] == 'y') {
+//         cout << "Enter the name of the unit/cell to be flipped: ";
+//         string name;
+//         std::cin >> name;
+//         cell_id = stoi(name);
+//         if (cell_id >= geograph.g.size) {
+//             throw std::runtime_error("Provided cell id is out of bounds.");
+//         }
+//         current_assignment = geograph.get_assignment();
+//         size_t part = current_assignment[cell_id];
+//         cout << "\nUnit " << name << " is currently assigned to part " << part << ".\n";
+//         cout << "Enter the name of its new part: ";
+//         std::cin >> name;
+//         size_t new_part = stoi(name);
+//         flip_status result = geograph.attempt_flip(cell_id, new_part);
+//         if (result == flip_status::success) {
+//             cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << new_part << ".\n";
+//         } else {
+//             cout << "Flip failed with status " << flip_status_name[result] << ".\n";
+//         }
         
-        cout << "Try another flip? (Y/N) ";
-        std::cin >> response;
-    }
+//         cout << "Try another flip? (Y/N) ";
+//         std::cin >> response;
+//     }
 
-    /** Uncomment below if attempt flips block above is commented out */
-    // string response;
-    // cout << "enter any text to close. ";
-    // std::cin >> response;
-    // cout << response;
-} /** end main */
+//     /** Uncomment below if attempt flips block above is commented out */
+//     // string response;
+//     // cout << "enter any text to close. ";
+//     // std::cin >> response;
+//     // cout << response;
+// } /** end main */

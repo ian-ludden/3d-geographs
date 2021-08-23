@@ -1,7 +1,6 @@
 /** 
  * \file geograph3d.hh
  * \brief Header file for geograph3d. */
-#pragma once
 #ifndef GEOGRAPH3D_HH
 #define GEOGRAPH3D_HH
 #include "static_graph.hh"
@@ -24,7 +23,6 @@ using std::vector;
  * the geograph3d object has been updated accordingly. 
  */
 enum flip_status { fail_1, fail_2, fail_3, fail_4, fail_5, success };
-const char *flip_status_name[] = { "fail_1", "fail_2", "fail_3", "fail_4", "fail_5", "success" };
 
 namespace gg3d {
 /** \brief Class representing an augmented neighbor. 

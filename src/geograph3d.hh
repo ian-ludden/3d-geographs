@@ -68,6 +68,8 @@ private:
     const double tol = 1.0e-10;
     /** Flag for whether the vertex lies on a zone boundary */
     bool is_boundary;
+    /** Flag for whether the vertex lies on the outer boundary (i.e., a bounding wall) */
+    bool is_outer_boundary;
 
 public:
     /** Unique ID of the vertex (0-face) */
@@ -101,6 +103,10 @@ public:
     void set_is_boundary(bool new_is_boundary);
     /** Getter for is_boundary private member variable */
     bool get_is_boundary();
+    /** Setter for is_outer_boundary private member variable */
+    void set_is_outer_boundary(bool new_is_outer_boundary);
+    /** Getter for is_outer_boundary private member variable */
+    bool get_is_outer_boundary();
 };
 
 /** \brief Class representing an edge (1-face) in 
@@ -115,8 +121,10 @@ public:
  */
 class cell_edge {
 private:
-    /** Flag for whether the vertex lies on a zone boundary */
+    /** Flag for whether the edge lies on a zone boundary */
     bool is_boundary;
+    /** Flag for whether the edge lies on the outer boundary (i.e., a bounding wall) */
+    bool is_outer_boundary;
 public:
     /** Unique ID of the edge (1-face) */
     const size_t id;
@@ -140,6 +148,10 @@ public:
     void set_is_boundary(bool new_is_boundary);
     /** Getter for is_boundary private member variable */
     bool get_is_boundary();
+    /** Setter for is_outer_boundary private member variable */
+    void set_is_outer_boundary(bool new_is_outer_boundary);
+    /** Getter for is_outer_boundary private member variable */
+    bool get_is_outer_boundary();
 };
 
 /** \brief Class representing a face (2-face) in 

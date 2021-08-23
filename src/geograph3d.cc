@@ -27,30 +27,60 @@ augmented_neighbor::augmented_neighbor(const size_t id) : id{id} {}
  * 
  * \param[in] (id) The id of the cell vertex. 
  */
-cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} { is_boundary = false; }
+cell_vertex::cell_vertex(size_t id, double x, double y, double z) : id{id}, pos{x, y, z} { 
+    is_boundary = false; 
+    is_outer_boundary = false; 
+}
 
-/** Setter for is_boundary private member variable */
+/** Setter for is_boundary private member variable.
+ * Replaces this->is_boundary with new_is_boundary, 
+ * unless this->is_outer_boundary is true, 
+ * in which case this->is_boundary is left as true. 
+ */
 void cell_vertex::set_is_boundary(bool new_is_boundary) {
-    this->is_boundary = new_is_boundary;
+    this->is_boundary = new_is_boundary || this->is_outer_boundary;
 }
 /** Getter for is_boundary private member variable */
 bool cell_vertex::get_is_boundary() {
     return this->is_boundary;
+}
+/** Setter for is_outer_boundary private member variable */
+void cell_vertex::set_is_outer_boundary(bool new_is_outer_boundary) {
+    this->is_outer_boundary = new_is_outer_boundary;
+}
+/** Getter for is_outer_boundary private member variable */
+bool cell_vertex::get_is_outer_boundary() {
+    return this->is_outer_boundary;
 }
 
 /** Constructor for cell_edge. 
  * 
  * \param[in] (id) The id of the cell edge. 
  */
-cell_edge::cell_edge(size_t id) : id{id} { is_boundary = false; }
+cell_edge::cell_edge(size_t id) : id{id} { 
+    is_boundary = false; 
+    is_outer_boundary = false;
+}
 
-/** Setter for is_boundary private member variable */
+/** Setter for is_boundary private member variable.
+ * Replaces this->is_boundary with new_is_boundary, 
+ * unless this->is_outer_boundary is true, 
+ * in which case this->is_boundary is left as true. 
+ */
 void cell_edge::set_is_boundary(bool new_is_boundary) {
-    this->is_boundary = new_is_boundary;
+    this->is_boundary = new_is_boundary || this->is_outer_boundary;
 }
 /** Getter for is_boundary private member variable */
 bool cell_edge::get_is_boundary() {
     return this->is_boundary;
+}
+/** Setter for is_outer_boundary private member variable */
+void cell_edge::set_is_outer_boundary(bool new_is_outer_boundary) {
+    this->is_outer_boundary = new_is_outer_boundary;
+}
+    /** Getter for is_outer_boundary private member variable */
+bool cell_edge::get_is_outer_boundary() {
+    return this->is_outer_boundary;
 }
 
 /** Constructor for cell_face. 
@@ -312,8 +342,11 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
                 && (v0.pos[dimension] <= min[dimension] 
                     || v0.pos[dimension] >= max[dimension])) {
                 cell_edges[i].set_is_boundary(true);
+                cell_edges[i].set_is_outer_boundary(true);
                 cell_vertices[v0.id].set_is_boundary(true);
+                cell_vertices[v0.id].set_is_outer_boundary(true);
                 cell_vertices[v1.id].set_is_boundary(true);
+                cell_vertices[v1.id].set_is_outer_boundary(true);
             }
         }
     }
@@ -409,16 +442,11 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     /** Construct X_v, the set of vertices/edges on the surface of cell v 
      * and the surface of v's current (giving) zone */
     vector<string> X_v;
-    for (auto &vertex_name : S_1_vertices) {
-        size_t vertex_index = std::stoi(vertex_name.substr(1, vertex_name.size()));
-        if (cell_vertices[vertex_index].get_is_boundary()) {
-            X_v.push_back(vertex_name);
-        }
-    }
-    for (auto &edge_name : S_1_edges) {
-        size_t edge_index = std::stoi(edge_name.substr(1, edge_name.size()));
-        if (cell_edges[edge_index].get_is_boundary()) {
-            X_v.push_back(edge_name);
+    for (auto &node_name : surface_poset_graphs[cell_id].vertex_name) {
+        size_t index = std::stoul(node_name.substr(1, node_name.size()));
+        if ((node_name[0] == 'v' && cell_vertices[index].get_is_boundary()) 
+            || (node_name[0] == 'e' && cell_edges[index].get_is_boundary())) {
+            X_v.push_back(node_name);
         }
     }
     std::sort(X_v.begin(), X_v.end());
@@ -580,7 +608,13 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
         } else { // Must be "eXX", by construction
             cell_edges[index].set_is_boundary(false);
         }
-    }    
+    }
+
+    vector<string> both_old_and_new;
+    std::set_intersection(new_boundary_elements.begin(), new_boundary_elements.end(), 
+                          new_internal_elements.begin(), new_internal_elements.end(), 
+                          std::back_inserter(both_old_and_new));
+    
 
     return flip_status::success;
 } /** end attempt_flip */

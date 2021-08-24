@@ -14,6 +14,7 @@
 using std::string;
 using std::vector;
 
+namespace gg3d {
 /** \brief Enum for result of geograph3d::attempt_flip. 
  * 
  * This enum comprises the possible statuses of a flip attempt.  
@@ -24,7 +25,9 @@ using std::vector;
  */
 enum flip_status { fail_1, fail_2, fail_3, fail_4, fail_5, success };
 
-namespace gg3d {
+/** Convert flip_status enum value to string representation */
+string flip_status_string(flip_status status);
+
 /** \brief Class representing an augmented neighbor. 
  * 
  * This is a class representing an augmented neighbor of 
@@ -283,16 +286,7 @@ private:
         set_assignment(init_assignment);
 
         /** Update is_external flags of cell vertices and edges */
-        for (auto & singleton : singleton_zone_cells) {
-            for (auto &aug_neighbor : aug_neighbors[singleton]) {
-                for (auto &vertex_id : aug_neighbor.shared_vertices) {
-                    cell_vertices[vertex_id].set_is_boundary(true);
-                }
-                for (auto &edge_id : aug_neighbor.shared_edges) {
-                    cell_edges[edge_id].set_is_boundary(true);
-                }
-            }
-        }
+        update_boundary_flags();
     };
 
     /**
@@ -451,7 +445,16 @@ public:
      */
     void set_assignment(vector<size_t> assignment) {
         this->assignment = assignment;
+        this->update_boundary_flags();
     }
+
+    /** 
+     * Updates is_boundary flags for all vertices and edges. 
+     * Inefficient, since it examines every vertex and edge; 
+     * typically used once after a call to set_assignment 
+     * for a specific initial partition.
+     */
+    void update_boundary_flags();
 
     /** Getter for assignment member variable. */
     vector<size_t> get_assignment() { return assignment; }

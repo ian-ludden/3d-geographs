@@ -15,11 +15,29 @@
 #include <algorithm>
 using std::string;
 using std::vector;
-
-/** Names for each of the enum values in flip_status */
-const char *flip_status_name[] = { "fail_1", "fail_2", "fail_3", "fail_4", "fail_5", "success" };
-
+\
 namespace gg3d {
+/** Convert flip_status enum value to string representation */
+string flip_status_string(flip_status status) {
+    switch (status)
+    {
+    case flip_status::fail_1:
+        return "fail_1";
+    case flip_status::fail_2:
+        return "fail_2";
+    case flip_status::fail_3:
+        return "fail_3";
+    case flip_status::fail_4:
+        return "fail_4";
+    case flip_status::fail_5:
+        return "fail_5";
+    case flip_status::success:
+        return "success";
+    default:
+        return "unknown status";
+    }
+}
+
 /** Constructor for augmented_neighbor. 
  * 
  * \param[in] (id) The cell id of the augmented neighbor.
@@ -476,7 +494,9 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 
 
     // Both vectors are sorted, so == operator can be used to check equality
-    if (S_1_intersect_X_v != Y_v) return flip_status::fail_1;
+    if (S_1_intersect_X_v != Y_v) {
+        return flip_status::fail_1;
+    }
 
     /** Check condition (2):  G_v[S_1] is connected */
     bool satisfies_condition_2 = surface_poset_graphs[cell_id].is_connected_subgraph(S_1);
@@ -622,6 +642,29 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
     return flip_status::success;
 } /** end attempt_flip */
 
+/** 
+ * Updates is_boundary flags for all vertices and edges. 
+ * Inefficient, since it examines every augmented neighbor relationship; 
+ * typically used once after a call to set_assignment 
+ * for a specific initial partition.
+ */
+void geograph3d::update_boundary_flags() {
+    // Reset all to false
+    for (size_t e_index = 0; e_index < cell_edges.size(); ++e_index) cell_edges[e_index].set_is_boundary(false);
+    for (size_t v_index = 0; v_index < cell_vertices.size(); ++v_index) cell_vertices[v_index].set_is_boundary(false);
+
+    for (size_t id = 0; id < this->N; ++id) {
+        for (size_t j = 0; j < aug_neighbors[id].size(); ++j) {
+            augmented_neighbor other = aug_neighbors[id][j];
+            if (assignment[other.id] != assignment[id]) {
+                // Shared edges and vertices between zones should have is_boundary == true
+                for (auto &e_index : other.shared_edges) cell_edges[e_index].set_is_boundary(true);
+                for (auto &v_index : other.shared_vertices) cell_vertices[v_index].set_is_boundary(true);
+            }
+        }
+    }
+}
+
 } /** end namespace gg3d */
 
 // // Quick test of cell_vertex constructor and "==" operator. 
@@ -707,11 +750,11 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
 //         cout << "Enter the name of its new part: ";
 //         std::cin >> name;
 //         size_t new_part = stoi(name);
-//         flip_status result = geograph.attempt_flip(cell_id, new_part);
-//         if (result == flip_status::success) {
+//         gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
+//         if (result == gg3d::flip_status::success) {
 //             cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << new_part << ".\n";
 //         } else {
-//             cout << "Flip failed with status " << flip_status_name[result] << ".\n";
+//             cout << "Flip failed with status " << gg3d::flip_status_string(result) << ".\n";
 //         }
         
 //         cout << "Try another flip? (Y/N) ";

@@ -66,11 +66,19 @@ int main(int argc, char *argv[]) {
         gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, num_parts);
         geograph.set_assignment(init_assignment);
 
-        bool result = geograph.attempt_flip(cell_id, new_part);
-        results.push_back(result == expected_result);
+        cout << "Attempting flip for test ID " << test_id << "...\n";
+
+        gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
+        bool flip_success = result == gg3d::flip_status::success;
+        results.push_back(flip_success == expected_result);
 
         if (!results[curr_test_case]) {
             cout << "\tFailed test ID " << test_id << ".\n";
+            if (expected_result) {
+                cout << "\tExpected success, got fail with status " << gg3d::flip_status_string(result) << ".\n";
+            } else {
+                cout << "\tExpected failure, got success.\n";
+            }
         }
 
         curr_test_case++;

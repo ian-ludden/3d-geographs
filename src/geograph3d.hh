@@ -166,6 +166,11 @@ public:
  * vertices (0-faces) comprising the face. 
  */
 class cell_face {
+private:
+    /** Flag for whether the face lies on a zone boundary */
+    bool is_boundary;
+    /** Flag for whether the face lies on the outer boundary (i.e., a bounding wall) */
+    bool is_outer_boundary;
 public:
     /** Unique ID of the face (2-face) */
     const size_t id;
@@ -173,6 +178,10 @@ public:
     vector<size_t> edges;
     /** IDs of vertices (0-faces) on the face, in increasing ID order */
     vector<size_t> vertices;
+    /** ID of lesser-indexed cell */
+    size_t first_cell;
+    /** ID of greater-indexed cell, if any (0 for outer boundary faces) */
+    size_t second_cell;
 
     /** Constructor for cell_face. 
      * 
@@ -191,6 +200,15 @@ public:
                               std::back_inserter(intersection));
         return intersection.size();
     }
+
+    /** Setter for is_boundary private member variable */
+    void set_is_boundary(bool new_is_boundary);
+    /** Getter for is_boundary private member variable */
+    bool get_is_boundary();
+    /** Setter for is_outer_boundary private member variable */
+    void set_is_outer_boundary(bool new_is_outer_boundary);
+    /** Getter for is_outer_boundary private member variable */
+    bool get_is_outer_boundary();
 };
 
 /** \brief Class representing a complete 3-D geo-graph. 
@@ -277,7 +295,7 @@ private:
         }
         set_assignment(init_assignment);
 
-        /** Update is_external flags of cell vertices and edges */
+        /** (inefficiently) update is_boundary flags of cell vertices, edges, and faces */
         update_boundary_flags();
     };
 
@@ -392,6 +410,28 @@ private:
         return boundary_vertices_and_edges;
     }
 
+    /** 
+     * Updates the is_boundary flags for cell faces after a flip succeeds. 
+     * 
+     * \param[in] (cell_id) the ID of the flipped cell
+     * \param[in] (old_part) the ID of the part (1 to K) **from** which the cell was flipped
+     * \param[in] (new_part) the ID of the part (1 to K) **to** which the cell was flipped
+     */
+    void update_boundary_faces(const size_t cell_id, const size_t old_part, const size_t new_part) {
+        for (auto &aug_neighbor : aug_neighbors[cell_id]) {
+            if (aug_neighbor.shared_faces.empty()) continue;
+            size_t neighbor_id = aug_neighbor.id;
+            size_t shared_face_index = aug_neighbor.shared_faces[0];
+            if (assignment[neighbor_id] == old_part) {
+                cell_faces[shared_face_index].set_is_boundary(true);            
+            } else if (assignment[neighbor_id] == new_part) {
+                cell_faces[shared_face_index].set_is_boundary(false);
+            } else {
+                (void) 0; // Pass
+            }
+        }
+    }
+
 public:
     /** 
      * The undirected graph of cells with 2-D face adjacencies, 
@@ -465,6 +505,9 @@ public:
 
     /** Getter for assignment member variable. */
     vector<size_t> get_assignment() { return assignment; }
+
+    /** Getter for cell_faces. */
+    vector<cell_face> get_cell_faces() { return cell_faces; }
 
     /** Returns the number of parts in the partition (i.e., member variable K). */
     size_t num_parts() { return K; }

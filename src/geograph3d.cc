@@ -109,7 +109,30 @@ bool cell_edge::get_is_outer_boundary() {
  * 
  * \param[in] (id) The id of the cell face. 
  */
-cell_face::cell_face(size_t id) : id{id} {}
+cell_face::cell_face(size_t id) : id{id} {
+    first_cell = 0;
+    second_cell = 0;
+    is_boundary = false;
+    is_outer_boundary = false;
+}
+
+/** Setter for is_boundary private member variable */
+void cell_face::set_is_boundary(bool new_is_boundary) {
+    this->is_boundary = new_is_boundary || this->is_outer_boundary;
+}
+
+/** Getter for is_boundary private member variable */
+bool cell_face::get_is_boundary() {
+    return this->is_boundary;
+}
+/** Setter for is_outer_boundary private member variable */
+void cell_face::set_is_outer_boundary(bool new_is_outer_boundary) {
+    this->is_outer_boundary = new_is_outer_boundary;
+}
+/** Getter for is_outer_boundary private member variable */
+bool cell_face::get_is_outer_boundary() {
+    return this->is_outer_boundary;
+}
 
 /** Constructor for 3-D geo-graph. 
  * Builds representation of 3-D geo-graph from 
@@ -345,7 +368,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
         }
     }
 
-    // Mark outer boundary edges/vertices as boundary
+    // Mark outer boundary elements as boundary
     double min[3] = { __DBL_MAX__, __DBL_MAX__, __DBL_MAX__ };
     double max[3] = { -__DBL_MAX__, -__DBL_MAX__, -__DBL_MAX__ };
     for (auto &cell_vtx : cell_vertices) {
@@ -355,6 +378,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
         } 
     }
 
+    // Boundary edges and vertices
     for (size_t i = 0; i < cell_edges.size(); ++i) {
         cell_edge e = cell_edges[i];
         cell_vertex v0 = cell_vertices[e.vertices[0]];
@@ -369,6 +393,33 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
                 cell_vertices[v0.id].set_is_outer_boundary(true);
                 cell_vertices[v1.id].set_is_boundary(true);
                 cell_vertices[v1.id].set_is_outer_boundary(true);
+            }
+        }
+    }
+
+    // Outer boundary faces (all edges are outer boundary)
+    for (size_t i = 0; i < cell_faces.size(); ++i) {
+        bool is_outer_boundary_face = true;
+        for (auto &e_index : cell_faces[i].edges) {
+            is_outer_boundary_face = is_outer_boundary_face && cell_edges[e_index].get_is_outer_boundary();
+        }
+        if (is_outer_boundary_face) {
+            cell_faces[i].set_is_outer_boundary(true);
+            cell_faces[i].set_is_boundary(true);
+        }
+    }
+
+    // Populate first_cell and second_cell for all cell faces
+    for (size_t cell_id_1 = 0; cell_id_1 < this->N; ++cell_id_1) {
+        for (auto &aug_neighbor : aug_neighbors[cell_id_1]) {
+            if (aug_neighbor.shared_faces.empty()) continue;
+            size_t shared_face_index = aug_neighbor.shared_faces[0];
+            if (cell_id_1 < aug_neighbor.id) {
+                cell_faces[shared_face_index].first_cell = cell_id_1;
+                cell_faces[shared_face_index].second_cell = aug_neighbor.id;
+            } else {
+                cell_faces[shared_face_index].first_cell = aug_neighbor.id;
+                cell_faces[shared_face_index].second_cell = cell_id_1;
             }
         }
     }
@@ -434,7 +485,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     }
 
     // Now that all member variables are initialized, create initial assignment
-    generate_initial_assignment();
+    this->generate_initial_assignment();
 }
 
 /**
@@ -596,17 +647,21 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
                             &&   surface_poset_graphs[cell_id].is_connected_subgraph(S_2_edges_and_faces_complement);
     if (!satisfies_condition_5) return flip_status::fail_5;
 
+    size_t old_part = assignment[cell_id];
     assignment[cell_id] = new_part; // Flip succeeded, so update assignment
 
-    /** Update is_external flags of involved 
+    /** Update is_boundary flags of involved 
      * vertices, edges, and faces. 
      *  - Y_v remains external/boundary. 
      *  - S_1^0 ∪ S_1^1 \ Y_v becomes external/boundary. 
-     *  - S_2^0 ∪ S_2^1 \ Y_v becomes internal/boundary. 
-     * TODO: These updates are not correct, find out where the bug is. 
-     *       Should be able to flip cell 1 to part 2 and then back to part 1, 
-     *       but it fails with status fail_1 when trying to flip back. 
+     *  - S_2^0 ∪ S_2^1 \ Y_v becomes internal/not boundary. 
+     *  - face(s) between cell cell_id and other cells in new_part become internal/not boundary.
+     *  - face(s) between cell cell_id and other cells in old_part become part of zone boundary. 
      */
+    // Handle faces first
+    this->update_boundary_faces(cell_id, old_part, new_part);
+
+    // Handle edges and vertices together
     vector<string> new_boundary_elements;
     vector<string> S_1_vertices_and_edges;
     std::set_union(S_1_vertices_sorted.begin(), S_1_vertices_sorted.end(), 
@@ -642,12 +697,6 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
             cell_edges[index].set_is_boundary(false);
         }
     }
-
-    vector<string> both_old_and_new;
-    std::set_intersection(new_boundary_elements.begin(), new_boundary_elements.end(), 
-                          new_internal_elements.begin(), new_internal_elements.end(), 
-                          std::back_inserter(both_old_and_new));
-    
 
     return flip_status::success;
 } /** end attempt_flip */
@@ -725,7 +774,9 @@ bool geograph3d::attempt_flip_BFS(size_t &cell_id, size_t &new_part) {
     }
 
     if (unvisited_neighbors.empty()) {
+        size_t old_part = assignment[cell_id];
         assignment[cell_id] = new_part;
+        this->update_boundary_faces(cell_id, old_part, new_part);
     }
 
     return unvisited_neighbors.empty(); 
@@ -741,14 +792,16 @@ void geograph3d::update_boundary_flags() {
     // Reset all to false
     for (size_t e_index = 0; e_index < cell_edges.size(); ++e_index) cell_edges[e_index].set_is_boundary(false);
     for (size_t v_index = 0; v_index < cell_vertices.size(); ++v_index) cell_vertices[v_index].set_is_boundary(false);
+    for (size_t f_index = 0; f_index < cell_faces.size(); ++f_index) cell_faces[f_index].set_is_boundary(false);
 
     for (size_t id = 0; id < this->N; ++id) {
         for (size_t j = 0; j < aug_neighbors[id].size(); ++j) {
             augmented_neighbor other = aug_neighbors[id][j];
             if (assignment[other.id] != assignment[id]) {
-                // Shared edges and vertices between zones should have is_boundary == true
+                // Shared vertices, edges, and faces between zones should have is_boundary == true
                 for (auto &e_index : other.shared_edges) cell_edges[e_index].set_is_boundary(true);
                 for (auto &v_index : other.shared_vertices) cell_vertices[v_index].set_is_boundary(true);
+                for (auto &f_index : other.shared_faces) cell_faces[f_index].set_is_boundary(true);
             }
         }
     }
@@ -788,6 +841,15 @@ int main(int argc, char *argv[]) {
     vector<size_t> current_assignment = geograph.get_assignment();
     for (size_t i = 0; i < current_assignment.size(); ++i) {
         cout << i << " to part " << current_assignment[i] << "\n";
+    }
+
+    // Print current boundary faces
+    cout << "Zone boundary faces:\n";
+    vector<gg3d::cell_face> cell_faces = geograph.get_cell_faces();
+    for (size_t i = 0; i < cell_faces.size(); ++i) {
+        if (cell_faces[i].get_is_boundary() && !cell_faces[i].get_is_outer_boundary()) {
+            cout << i << ", between cells " << cell_faces[i].first_cell << " and " << cell_faces[i].second_cell << ".\n";
+        }
     }
 
     // Attempt flips    

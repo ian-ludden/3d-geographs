@@ -807,13 +807,14 @@ int main(int argc, char *argv[]) {
         cout << "Enter the name of its new part: ";
         std::cin >> name;
         size_t new_part = stoi(name);
-        bool success = geograph.attempt_flip_BFS(cell_id, new_part);
-        // gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
-        // if (result == gg3d::flip_status::success) {
-        if (success) {
+        // bool success = geograph.attempt_flip_BFS(cell_id, new_part);
+        gg3d::flip_status result = geograph.attempt_flip(cell_id, new_part);
+        // if (success) { // for attempt_flip_BFS
+        if (result == gg3d::flip_status::success) {
             cout << "Flip was successful. Unit " << cell_id << " is now assigned to part " << new_part << ".\n";
         } else {
-            cout << "Flip failed.\n";// with status " << gg3d::flip_status_string(result) << ".\n";
+            // cout << "Flip failed.\n"; // for attempt_flip_BFS
+            cout << "Flip failed with status " << gg3d::flip_status_string(result) << ".\n";
         }
         
         cout << "Try another flip? (Y/N) ";

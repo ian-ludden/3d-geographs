@@ -219,13 +219,6 @@ private:
     /** List of cell faces */
     vector<cell_face> cell_faces;
 
-    /** 
-     * List of lists of faces, stored as uint64_t to support bit operations for detecting when two faces share an edge. 
-     * NB: Breaks if any cell has more than 64 vertices. 
-     * TODO: Should replace this during rework
-     */
-    // vector<vector<uint64_t>> faces;
-
     /**
      * Generates an initial assignment that achieves spherical zones, 
      * which are a pre-condition for 
@@ -235,12 +228,11 @@ private:
      * 
      * The procedure is deterministic, 
      * selecting for each new zone a cell that
-     *   1. is not a neighbor of other selected singleton zones; 
-     *   2. satisfies condition (1) of attempt_flip; and 
-     *   3. satisfies condition (2) of attempt_flip w.r.t. the default (remainder) zone. 
+     * is not a neighbor of other selected singleton zones. 
      * 
      * Among cells with maximum number of wall neighbors satisfying the conditions, 
      * the cell with least index is chosen. 
+     * For a uniform grid of unit cubes, this prioritizes corners. 
      */
     void generate_initial_assignment() {
         vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
@@ -436,6 +428,21 @@ public:
      *                       otherwise, throws an invalid_argument exception.
      */
     flip_status attempt_flip(size_t &cell_id, size_t &new_part);
+
+    /**
+     * Checks whether flipping a cell to a new part 
+     * maintains contiguous, but not necessarily spherical, zones (parts). 
+     * If the flip does maintain contiguous zones, 
+     * this->assignment is updated to indicate the flip. 
+     * 
+     * \param[in] (cell_id) The ID of the cell to be flipped
+     * \param[in] (new_part) The part to which cell_id will be moved. 
+     *                       Enforced to be between 1 and K, inclusive; 
+     *                       otherwise, throws an invalid_argument exception. 
+     * 
+     * \return true if the flip succeeds, false if it is rejected
+     */
+    bool attempt_flip_BFS(size_t &cell_id, size_t &new_part);
 
     /**
      * Setter for assignment member variable. 

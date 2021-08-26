@@ -56,14 +56,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t num_flip_attempts = 1000;
+    size_t num_flip_attempts = 100;
     size_t current_attempt = 0;
 
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
     /** TODO: implement */
     while (current_attempt < num_flip_attempts) {
         current_attempt++;
-        cout << "*** Flip attempt #" << current_attempt << " ***\n";
+        // cout << "*** Flip attempt #" << current_attempt << " ***\n";
 
         auto rand_index = rand() % boundary_faces.size();
         size_t boundary_face_index = boundary_faces[rand_index];
@@ -96,10 +96,10 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        cout << "Attempting flip of cell " << cell_to_flip << " to part " << new_part << "...\n";
+        cout << "Attempting flip, cell:," << cell_to_flip << ",part:," << new_part << ",";
         result = geograph.attempt_flip(cell_to_flip, new_part);
         if (result == gg3d::flip_status::success) {
-            cout << "Flip was successful. Unit " << cell_to_flip << " is now assigned to part " << new_part << ".\n";
+            cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
             // Update boundary_faces vector
             boundary_faces.clear();
             for (size_t i = 0; i < cell_faces.size(); ++i) {
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             // cout << "Flip failed.\n"; // for attempt_flip_BFS
-            cout << "Flip failed with status " << gg3d::flip_status_string(result) << ".\n";
+            cout << "Flip failed,status " << gg3d::flip_status_string(result) << ".\n";
         }        
     }
 
@@ -120,24 +120,24 @@ int main(int argc, char *argv[]) {
     cout << "\nNew assignments:\n";
     for (size_t i = 0; i < geograph.num_cells(); ++i) {
         size_t part_id = geograph.get_assignment(i);
-        cout << i << " : " << part_id << "\n";
+        cout << i << "," << part_id << "\n";
         parts[part_id - 1].push_back(i);
     }
 
     cout << "\nNew parts:\n";
     for (size_t i = 0; i < parts.size(); ++i) {
         if (parts[i].empty()) {
-            cout << i << ": empty.\n";
+            cout << i+1 << ",empty\n";
             continue;
         }
-        cout << i << ": " << parts[i][0];
-        for (size_t j = 1; j < parts[i].size(); ++j) cout << ", " << parts[i][j];
+        cout << "Part " << i+1 << "," << parts[i][0];
+        for (size_t j = 1; j < parts[i].size(); ++j) cout << "," << parts[i][j];
         cout << "\n";
     }
 
     cout << "\nNew part sizes:\n";
     for (size_t i = 1; i <= geograph.num_parts(); ++i) {
-        cout << i << " : " << geograph.get_part_size(i) << "\n";
+        cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
     cout << "\nEnter any string to exit: ";

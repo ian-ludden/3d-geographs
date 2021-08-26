@@ -224,6 +224,8 @@ private:
     size_t N;
     /** Number of parts */
     const size_t K;
+    /** Part sizes, indexed 1 to K (part_sizes[0] is set to 0) */
+    vector<size_t> part_sizes;
     /** A map of cell IDs to part assignments, indexed 1 to K */
     vector<size_t> assignment;
     /** List of lists of neighbor IDs; primary index is cell ID. Includes wall neighbors (-1 through -6)*/
@@ -291,8 +293,10 @@ private:
         init_assignment.resize(N, 1);
         size_t zone_index = 2;
         for (auto & singleton : singleton_zone_cells) {
+            part_sizes[zone_index] = 1;
             init_assignment[singleton] = zone_index++;
         }
+        part_sizes[1] = N - singleton_zone_cells.size();
         set_assignment(init_assignment);
 
         /** (inefficiently) update is_boundary flags of cell vertices, edges, and faces */
@@ -420,16 +424,29 @@ private:
     void update_boundary_faces(const size_t cell_id, const size_t old_part, const size_t new_part) {
         for (auto &aug_neighbor : aug_neighbors[cell_id]) {
             if (aug_neighbor.shared_faces.empty()) continue;
+
             size_t neighbor_id = aug_neighbor.id;
             size_t shared_face_index = aug_neighbor.shared_faces[0];
+            
             if (assignment[neighbor_id] == old_part) {
-                cell_faces[shared_face_index].set_is_boundary(true);            
+                cell_faces[shared_face_index].set_is_boundary(true);
             } else if (assignment[neighbor_id] == new_part) {
                 cell_faces[shared_face_index].set_is_boundary(false);
             } else {
                 (void) 0; // Pass
             }
         }
+    }
+
+    /** 
+     * Update the part sizes after a flip. 
+     * 
+     * \param[in] (old_part) the old part (1 to K) of the flipped unit
+     * \param[in] (new_part) the new part (1 to K) of the flipped unit
+     */
+    void update_part_sizes(size_t old_part, size_t new_part) {
+        part_sizes[old_part]--;
+        part_sizes[new_part]++;
     }
 
 public:
@@ -503,8 +520,25 @@ public:
      */
     void update_boundary_flags();
 
+    /**
+     * Gets the size of the part with the given index (1 to K).
+     * 
+     * \param[in] (part_index) the index of the part (1 to K)
+     * 
+     * \return the number of cells in the part with the given index
+     */
+    size_t get_part_size(size_t part_index) {
+        return this->part_sizes[part_index];
+    }
+
     /** Getter for assignment member variable. */
     vector<size_t> get_assignment() { return assignment; }
+
+    /** Getter for specific element of assignment member variable. */
+    size_t get_assignment(size_t cell_id) {
+        if (cell_id > N) throw std::invalid_argument("Out-of-bounds cell_id passed to get_assignment().");
+        return this->assignment[cell_id];
+    }
 
     /** Getter for cell_faces. */
     vector<cell_face> get_cell_faces() { return cell_faces; }

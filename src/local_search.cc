@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
 
     // Build set of current boundary faces, printing each
     vector<size_t> boundary_faces;
+    vector<size_t> old_boundary_faces;
     cout << "Zone boundary faces:\n";
     vector<gg3d::cell_face> cell_faces = geograph.get_cell_faces();
     for (size_t i = 0; i < cell_faces.size(); ++i) {
@@ -99,7 +100,10 @@ int main(int argc, char *argv[]) {
         if (result == gg3d::flip_status::success) {
             cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
             // Update boundary_faces vector
+            old_boundary_faces.clear();
+            for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
             boundary_faces.clear();
+            cell_faces = geograph.get_cell_faces();
             for (size_t i = 0; i < cell_faces.size(); ++i) {
                 if (cell_faces[i].get_is_boundary() 
                     && !cell_faces[i].get_is_outer_boundary()) {
@@ -117,11 +121,16 @@ int main(int argc, char *argv[]) {
                 cell_to_flip = cell_1;
                 new_part = part_2;
             }
+            cout << "Attempting reverse flip, cell:," << cell_to_flip << ",part:," << new_part << ",";
+
             result = geograph.attempt_flip(cell_to_flip, new_part);
             if (result == gg3d::flip_status::success) {
-                cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
+                cout << "Reverse flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
                 // Update boundary_faces vector
+                old_boundary_faces.clear();
+            for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
                 boundary_faces.clear();
+                cell_faces = geograph.get_cell_faces();
                 for (size_t i = 0; i < cell_faces.size(); ++i) {
                     if (cell_faces[i].get_is_boundary() 
                         && !cell_faces[i].get_is_outer_boundary()) {
@@ -135,6 +144,8 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    cout << "Terminated after attempting " << current_attempt << " flips.\n";
 
     vector<vector<size_t>> parts;
     parts.resize(geograph.num_parts(), {});

@@ -56,14 +56,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t num_flip_attempts = 100;
+    size_t num_flip_attempts = 1000;
     size_t current_attempt = 0;
 
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
-    /** TODO: implement */
-    while (current_attempt < num_flip_attempts) {
+    while (current_attempt < num_flip_attempts && !boundary_faces.empty()) {
         current_attempt++;
-        // cout << "*** Flip attempt #" << current_attempt << " ***\n";
 
         auto rand_index = rand() % boundary_faces.size();
         size_t boundary_face_index = boundary_faces[rand_index];
@@ -75,7 +73,7 @@ int main(int argc, char *argv[]) {
         size_t part_1_size = geograph.get_part_size(part_1);
         size_t part_2_size = geograph.get_part_size(part_2);
 
-        // Attempt flip across boundary face from smaller part to larger part
+        // Attempt flip across boundary face, preferring from smaller part to larger part
         gg3d::flip_status result;
         size_t cell_to_flip;
         size_t new_part;
@@ -109,9 +107,33 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            // cout << "Flip failed.\n"; // for attempt_flip_BFS
             cout << "Flip failed,status " << gg3d::flip_status_string(result) << ".\n";
-        }        
+
+            // Try reverse flip
+            if (cell_to_flip == cell_1) {
+                cell_to_flip = cell_2;
+                new_part = part_1;
+            } else {
+                cell_to_flip = cell_1;
+                new_part = part_2;
+            }
+            result = geograph.attempt_flip(cell_to_flip, new_part);
+            if (result == gg3d::flip_status::success) {
+                cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
+                // Update boundary_faces vector
+                boundary_faces.clear();
+                for (size_t i = 0; i < cell_faces.size(); ++i) {
+                    if (cell_faces[i].get_is_boundary() 
+                        && !cell_faces[i].get_is_outer_boundary()) {
+                        boundary_faces.push_back(i);
+                    }
+                }
+            } else {
+                cout << "Reverse flip failed,status " << gg3d::flip_status_string(result) << ".\n";
+                // Remove failed face from boundary_faces until next successful flip
+                boundary_faces.erase(boundary_faces.begin() + rand_index);
+            }
+        }
     }
 
     vector<vector<size_t>> parts;

@@ -7,11 +7,11 @@ using namespace voro;
 
 // Define bounding box
 const int x_min = 0;
-const int x_max = 30;
+const int x_max = 20;
 const int y_min = 0; 
-const int y_max = 30;
+const int y_max = 20;
 const int z_min = 0; 
-const int z_max = 30; 
+const int z_max = 20; 
 
 const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 

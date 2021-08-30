@@ -1,6 +1,8 @@
 /**
- * \file local_search.cc 
- * \brief Implementation of random local search for 3-D partitioning. 
+ * \file local_search_BFS.cc 
+ * \brief Implementation of random local search for 3-D partitioning, 
+ * using BFS for contiguity verification (as opposed to 3-D geo-graphs 
+ * for spherical verification, as in local_search.cc). 
  */
 #include "geograph3d.hh"
 #include <fstream>
@@ -57,14 +59,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t num_flip_attempts = 100000;
+    size_t num_flip_attempts = 10000;
     size_t current_attempt = 0;
 
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
     while (current_attempt < num_flip_attempts && !boundary_faces.empty()) {
         current_attempt++;
 
-        if (current_attempt % 1000 == 0) cout << "Flip #" << current_attempt / 1000 << " thousand of 1 million.\n";
+        if (current_attempt % 1000 == 0) cout << "Flip #" << current_attempt << "\n";
 
         auto rand_index = rand() % boundary_faces.size();
         size_t boundary_face_index = boundary_faces[rand_index];
@@ -77,7 +79,7 @@ int main(int argc, char *argv[]) {
         size_t part_2_size = geograph.get_part_size(part_2);
 
         // Attempt flip across boundary face, preferring from smaller part to larger part
-        gg3d::flip_status result;
+        bool success;
         size_t cell_to_flip;
         size_t new_part;
         if (part_1_size < part_2_size) {
@@ -98,8 +100,8 @@ int main(int argc, char *argv[]) {
         }
 
         // cout << "Attempting flip, cell:," << cell_to_flip << ",part:," << new_part << ",";
-        result = geograph.attempt_flip(cell_to_flip, new_part);
-        if (result == gg3d::flip_status::success) {
+        success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
+        if (success) {
             // cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
             // Update boundary_faces vector
             old_boundary_faces.clear();
@@ -113,7 +115,7 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            // cout << "Flip failed,status " << gg3d::flip_status_string(result) << ".\n";
+            // cout << "Flip failed.\n";
 
             // Try reverse flip
             if (cell_to_flip == cell_1) {
@@ -125,8 +127,8 @@ int main(int argc, char *argv[]) {
             }
             // cout << "Attempting reverse flip, cell:," << cell_to_flip << ",part:," << new_part << ",";
 
-            result = geograph.attempt_flip(cell_to_flip, new_part);
-            if (result == gg3d::flip_status::success) {
+            success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
+            if (success) {
                 // cout << "Reverse flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
                 // Update boundary_faces vector
                 old_boundary_faces.clear();
@@ -140,7 +142,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
             } else {
-                // cout << "Reverse flip failed,status " << gg3d::flip_status_string(result) << ".\n";
+                // cout << "Reverse flip failed.\n";
                 // Remove failed face from boundary_faces until next successful flip
                 boundary_faces.erase(boundary_faces.begin() + rand_index);
             }
@@ -149,20 +151,20 @@ int main(int argc, char *argv[]) {
 
     cout << "Terminated after attempting " << current_attempt << " flips.\n";
 
-    vector<vector<size_t>> parts;
-    parts.resize(geograph.num_parts(), {});
+    // vector<vector<size_t>> parts;
+    // parts.resize(geograph.num_parts(), {});
 
     // cout << "\nNew assignments:\n";
-    for (size_t i = 0; i < geograph.num_cells(); ++i) {
-        size_t part_id = geograph.get_assignment(i);
-        // cout << i << "," << part_id << "\n";
-        parts[part_id - 1].push_back(i);
-    }
+    // for (size_t i = 0; i < geograph.num_cells(); ++i) {
+    //     size_t part_id = geograph.get_assignment(i);
+    //     cout << i << "," << part_id << "\n";
+    //     parts[part_id - 1].push_back(i);
+    // }
 
     // cout << "\nNew parts:\n";
     // for (size_t i = 0; i < parts.size(); ++i) {
     //     if (parts[i].empty()) {
-    //         // cout << i+1 << ",empty\n";
+    //         cout << i+1 << ",empty\n";
     //         continue;
     //     }
     //     // cout << "Part " << i+1 << "," << parts[i][0];

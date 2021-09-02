@@ -56,10 +56,12 @@ int main(int argc, char *argv[]) {
     size_t num_reverse_flip_attempts = 0;
     size_t current_attempt = 0;
 
-    /** Total time spent on attempt_flip, in microseconds */
-    size_t total_flip_verification_time_us;
+    /** Total time spent on attempt_flip_BFS, in microseconds, separated by failure (0) / success (1) */
+    long total_flip_verification_time_us[2] = {0, 0};
+    /** Number of failures (0) and successes (1) on attempt_flip_BFS */
+    size_t count_flips_with_result[2] = {0, 0};
     /** Total elapsed time during while loop, rounded to nearest second */
-    size_t total_time_seconds;
+    long total_time_seconds;
 
     auto start_while = std::chrono::high_resolution_clock::now();
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
@@ -102,8 +104,9 @@ int main(int argc, char *argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
         success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
         auto stop = std::chrono::high_resolution_clock::now();
-        total_flip_verification_time_us += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-        
+        total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        count_flips_with_result[success]++;
+
         if (success) {
             // cout << "Flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
             // Update boundary_faces vector
@@ -131,7 +134,8 @@ int main(int argc, char *argv[]) {
             start = std::chrono::high_resolution_clock::now();
             success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
             stop = std::chrono::high_resolution_clock::now();
-            total_flip_verification_time_us += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            count_flips_with_result[success]++;
             
             if (success) {
                 // cout << "Reverse flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
@@ -162,8 +166,12 @@ int main(int argc, char *argv[]) {
     cout << "Total elapsed time:\t" << total_time_seconds << " seconds\n";
     size_t total_calls_attempt_flip = current_attempt + num_reverse_flip_attempts;
     cout << "Total calls to attempt_flip_BFS (including reverse flip attempts):\t" << total_calls_attempt_flip << "\n";
-    cout << "Total time spent in attempt_flip_BFS:\t" << total_flip_verification_time_us << " microseconds.\n";
-    float average_time_attempt_flip = total_flip_verification_time_us * 1.0 / total_calls_attempt_flip;
+    cout << "Average time spent in attempt_flip_BFS:\n"; 
+    cout << "\tWith success: " << total_flip_verification_time_us[1] * 1.0 / count_flips_with_result[1] << " microseconds, over " << count_flips_with_result[1] << " samples.\n";
+    cout << "\tWith failure: " << total_flip_verification_time_us[0] * 1.0 / count_flips_with_result[0] << " microseconds, over " << count_flips_with_result[0] << " samples.\n";
+    cout << "\n";
+
+    float average_time_attempt_flip = (total_flip_verification_time_us[0] + total_flip_verification_time_us[1]) * 1.0 / total_calls_attempt_flip;
     cout << "Average time spent in attempt_flip_BFS:\t" << average_time_attempt_flip << " microseconds.\n";
 
     cout << "\nNew part sizes:\n";

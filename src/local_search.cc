@@ -12,6 +12,7 @@
 using std::string;
 using std::vector;
 using std::cout;
+using gg3d::flip_status;
 
 int main(int argc, char *argv[]) {
     string in_filename;
@@ -60,10 +61,12 @@ int main(int argc, char *argv[]) {
     size_t num_reverse_flip_attempts = 0;
     size_t current_attempt = 0;
 
-    /** Total time spent on attempt_flip, in microseconds */
-    size_t total_flip_verification_time_us;
+    /** Total time spent on attempt_flip, in microseconds, separated based on result */
+    long total_flip_verification_time_us[6] = {0, 0, 0, 0, 0, 0}; // There are six statuses in gg3d::flip_status enum
+    /** Number of flips with each possible result */
+    size_t count_flips_with_result[6] = {0, 0, 0, 0, 0, 0};
     /** Total elapsed time during while loop, rounded to nearest second */
-    size_t total_time_seconds;
+    long total_time_seconds;
 
     auto start_while = std::chrono::high_resolution_clock::now();
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
@@ -106,7 +109,8 @@ int main(int argc, char *argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
         result = geograph.attempt_flip(cell_to_flip, new_part);
         auto stop = std::chrono::high_resolution_clock::now();
-        total_flip_verification_time_us += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        count_flips_with_result[static_cast<size_t>(result)]++;
         if (result == gg3d::flip_status::success) {
             // Update boundary_faces vector
             old_boundary_faces.clear();
@@ -133,7 +137,8 @@ int main(int argc, char *argv[]) {
             start = std::chrono::high_resolution_clock::now();
             result = geograph.attempt_flip(cell_to_flip, new_part);
             stop = std::chrono::high_resolution_clock::now();
-            total_flip_verification_time_us += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            count_flips_with_result[static_cast<size_t>(result)]++;
 
             if (result == gg3d::flip_status::success) {
                 // Update boundary_faces vector
@@ -162,8 +167,23 @@ int main(int argc, char *argv[]) {
     cout << "Total elapsed time:\t" << total_time_seconds << " seconds\n";
     size_t total_calls_attempt_flip = current_attempt + num_reverse_flip_attempts;
     cout << "Total calls to attempt_flip (including reverse flip attempts):\t" << total_calls_attempt_flip << "\n";
-    cout << "Total time spent in attempt_flip:\t" << total_flip_verification_time_us << " microseconds.\n";
-    float average_time_attempt_flip = total_flip_verification_time_us * 1.0 / total_calls_attempt_flip;
+    cout << "Average time spent in attempt_flip:\n"; 
+    for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
+        flip_status status = static_cast<flip_status>(status_val);
+        cout << "\tWith result " << gg3d::flip_status_string(status) << ": " << total_flip_verification_time_us[status_val] * 1.0 / count_flips_with_result[status_val] << " microseconds.\n";
+    }
+    cout << "\n";
+
+    cout << "Number of flips:\n";
+    for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
+        flip_status status = static_cast<flip_status>(status_val);
+        cout << "\tWith result " << gg3d::flip_status_string(status) << ": " << count_flips_with_result[status_val] << ".\n";
+    }
+    cout << "\n";
+
+    long sum_total_flip_verification_times = 0;
+    for (int i = 0; i < 6; ++i) sum_total_flip_verification_times += total_flip_verification_time_us[i];
+    float average_time_attempt_flip = sum_total_flip_verification_times * 1.0 / total_calls_attempt_flip;
     cout << "Average time spent in attempt_flip:\t" << average_time_attempt_flip << " microseconds.\n";
 
     cout << "\nNew part sizes:\n";

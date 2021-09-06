@@ -735,6 +735,9 @@ bool geograph3d::attempt_flip_BFS(size_t &cell_id, size_t &new_part) {
         if (assignment[neighbor_id] == assignment[cell_id]) unvisited_neighbors.insert(neighbor_id);
     }
 
+    // Make sure unvisited_neighbors is not empty (if it is, then flip fails)
+    if (unvisited_neighbors.empty()) return false;
+
     // Indicator vector for whether every cell is in the same zone as cell_id, to be used for BFS
     vector<bool> is_same_zone(this->N, false);
     for (size_t id = 0; id < this->N; ++id) is_same_zone[id] = (assignment[id] == assignment[cell_id]);

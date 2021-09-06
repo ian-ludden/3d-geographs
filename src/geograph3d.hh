@@ -350,7 +350,7 @@ private:
      * Vertices on the boundary are then found by taking the union of the endpoints of the boundary edges. 
      */
     vector<string> boundary_vertices_and_edges_of_shared_surface(size_t &cell_id, vector<string> &shared_element_names) {
-        if (shared_element_names.size() <= 0) throw std::invalid_argument("shared_element_names cannot be empty.");
+        if (shared_element_names.size() <= 0) throw std::invalid_argument("shared_element_names cannot be empty.\n");
 
         static_graph g_v = surface_poset_graphs[cell_id];
         vector<string> boundary_edges;

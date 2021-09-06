@@ -164,27 +164,20 @@ int main(int argc, char *argv[]) {
     cout << "Terminated after attempting " << current_attempt << " flips.\n\n";
 
     // Summarize timing
-    cout << "Total elapsed time:\t" << total_time_seconds << " seconds\n";
+    cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";
     size_t total_calls_attempt_flip = current_attempt + num_reverse_flip_attempts;
-    cout << "Total calls to attempt_flip (including reverse flip attempts):\t" << total_calls_attempt_flip << "\n";
+    cout << "Total calls to attempt_flip (including reverse flip attempts):," << total_calls_attempt_flip << "\n";
     cout << "Average time spent in attempt_flip:\n"; 
     for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
         flip_status status = static_cast<flip_status>(status_val);
-        cout << "\tWith result " << gg3d::flip_status_string(status) << ": " << total_flip_verification_time_us[status_val] * 1.0 / count_flips_with_result[status_val] << " microseconds.\n";
-    }
-    cout << "\n";
-
-    cout << "Number of flips:\n";
-    for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
-        flip_status status = static_cast<flip_status>(status_val);
-        cout << "\tWith result " << gg3d::flip_status_string(status) << ": " << count_flips_with_result[status_val] << ".\n";
+        cout << "\tWith result " << gg3d::flip_status_string(status) << ":," << total_flip_verification_time_us[status_val] * 1.0 / count_flips_with_result[status_val] << ",microseconds over," << count_flips_with_result[status_val] << ",samples.\n";
     }
     cout << "\n";
 
     long sum_total_flip_verification_times = 0;
     for (int i = 0; i < 6; ++i) sum_total_flip_verification_times += total_flip_verification_time_us[i];
     float average_time_attempt_flip = sum_total_flip_verification_times * 1.0 / total_calls_attempt_flip;
-    cout << "Average time spent in attempt_flip:\t" << average_time_attempt_flip << " microseconds.\n";
+    cout << "Average time spent in attempt_flip:," << average_time_attempt_flip << " microseconds\n";
 
     cout << "\nNew part sizes:\n";
     for (size_t i = 1; i <= geograph.num_parts(); ++i) {

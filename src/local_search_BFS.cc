@@ -163,16 +163,16 @@ int main(int argc, char *argv[]) {
     cout << "Terminated after attempting " << current_attempt << " flips.\n";
 
     // Summarize timing
-    cout << "Total elapsed time:\t" << total_time_seconds << " seconds\n";
+    cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";
     size_t total_calls_attempt_flip = current_attempt + num_reverse_flip_attempts;
-    cout << "Total calls to attempt_flip_BFS (including reverse flip attempts):\t" << total_calls_attempt_flip << "\n";
+    cout << "Total calls to attempt_flip_BFS (including reverse flip attempts):," << total_calls_attempt_flip << "\n";
     cout << "Average time spent in attempt_flip_BFS:\n"; 
-    cout << "\tWith success: " << total_flip_verification_time_us[1] * 1.0 / count_flips_with_result[1] << " microseconds, over " << count_flips_with_result[1] << " samples.\n";
-    cout << "\tWith failure: " << total_flip_verification_time_us[0] * 1.0 / count_flips_with_result[0] << " microseconds, over " << count_flips_with_result[0] << " samples.\n";
+    cout << "\tWith success:," << total_flip_verification_time_us[1] * 1.0 / count_flips_with_result[1] << " microseconds over," << count_flips_with_result[1] << ",samples.\n";
+    cout << "\tWith failure:," << total_flip_verification_time_us[0] * 1.0 / count_flips_with_result[0] << " microseconds over," << count_flips_with_result[0] << ",samples.\n";
     cout << "\n";
 
     float average_time_attempt_flip = (total_flip_verification_time_us[0] + total_flip_verification_time_us[1]) * 1.0 / total_calls_attempt_flip;
-    cout << "Average time spent in attempt_flip_BFS:\t" << average_time_attempt_flip << " microseconds.\n";
+    cout << "Average time spent in attempt_flip_BFS:," << average_time_attempt_flip << ",microseconds.\n";
 
     cout << "\nNew part sizes:\n";
     for (size_t i = 1; i <= geograph.num_parts(); ++i) {

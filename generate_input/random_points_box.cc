@@ -1,21 +1,23 @@
 // Create Voronoi cells for randomly generated seed points in a rectangular prism (box)
 #include "voro++.hh"
+#include <chrono>
+#include <iostream>
 using namespace voro;
 
 const bool DEBUG = false;
 
 // Define bounding box
 const int x_min = 0;
-const int x_max = 10;
+const int x_max = 30;
 const int y_min = 0; 
-const int y_max = 20;
+const int y_max = 30;
 const int z_min = 0; 
-const int z_max = 10; 
+const int z_max = 30; 
 
 const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
 // Define number of seed points (particles)
-const int num_particles = 100;
+const int num_particles = 27000;
 
 // Define parameters for container blocks
 const int blocks_x = 5, blocks_y = 5, blocks_z = 5;
@@ -51,13 +53,15 @@ int main() {
     }
 
 	// Save particles in POV-Ray format
-	con.draw_particles_pov("random_points_box_p.pov");
+	// con.draw_particles_pov("random_points_box_p.pov");
 
 	// Save Voronoi cells in POV-Ray format
-	con.draw_cells_pov("random_points_box_v.pov");
+	// con.draw_cells_pov("random_points_box_v.pov");
 
-    // Print column headers of CSV output file
-    const char * output_fname = "random_points_box_output.csv";
+    // Write CSV output file
+    const char * output_fname = "random_voronoi_30x30x30.csv";
+    std::cout << "Writing Voronoi cells to " << output_fname << ".\n";
+    auto start = std::chrono::high_resolution_clock::now();
     FILE * fp = safe_fopen(output_fname, "w");
     fprintf(fp, "%d\n", index); // Print number of cells on a line by itself
     fprintf(fp, "ID,No. Neighbors,Neighbors,Faces,Vertices\n");
@@ -66,4 +70,12 @@ int main() {
     // Section 6, to interpret format string. 
     con.print_custom("%i,%s,%n,%t,%P", fp);
     fclose(fp);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    std::cout << "Elapsed time: " << duration.count() << " milliseconds.\n";
+
+    std::string response;
+    std::cout << "Enter any string to exit: ";
+    std::cin >> response;
+    std::cout << response;
 }

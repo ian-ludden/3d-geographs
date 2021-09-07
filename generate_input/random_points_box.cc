@@ -8,11 +8,11 @@ const bool DEBUG = false;
 
 // Define bounding box
 const int x_min = 0;
-const int x_max = 30;
+const int x_max = 300;
 const int y_min = 0; 
-const int y_max = 30;
+const int y_max = 300;
 const int z_min = 0; 
-const int z_max = 30; 
+const int z_max = 300; 
 
 const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
@@ -59,7 +59,7 @@ int main() {
 	// con.draw_cells_pov("random_points_box_v.pov");
 
     // Write CSV output file
-    const char * output_fname = "random_voronoi_30x30x30.csv";
+    const char * output_fname = "random_voronoi_27000.csv";
     std::cout << "Writing Voronoi cells to " << output_fname << ".\n";
     auto start = std::chrono::high_resolution_clock::now();
     FILE * fp = safe_fopen(output_fname, "w");

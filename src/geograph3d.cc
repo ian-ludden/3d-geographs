@@ -480,6 +480,25 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
             }
         }
 
+        // // Debugging degeneracy issues with random Voronoi 20x20x20 instance
+        // if (num_faces + num_edges + num_vertices > node_names.size()) {
+        //     std::cout << "Node names:\n";
+        //     for (auto & node_name : node_names) std::cout << node_name << "\n";
+        //     std::cout << "\n";
+        //     std::cout << "All faces:\n";
+        //     for (auto & face_index : face_indices[i]) std::cout << "f" << face_index << "\n";
+        //     std::cout << "\n";
+        //     std::cout << "All vertices:\n";
+        //     for (auto & vertex_index : vertex_indices[i]) std::cout << "v" << vertex_index << "\n";
+        //     std::cout << "\n";
+        //     std::cout << "All edges of cell's faces:\n";
+        //     for (auto & face_index : face_indices[i]) {
+        //         cell_face face = cell_faces[face_index];
+        //         for (auto & edge_index : face.edges) std::cout << "e" << edge_index << "\n";
+        //     }
+        //     std::cout << "\n";
+        // }
+
         static_graph surface_poset_graph = static_graph(sp_edges, num_faces + num_edges + num_vertices, node_names);
         surface_poset_graphs.push_back(surface_poset_graph);
     }

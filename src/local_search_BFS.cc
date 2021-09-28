@@ -101,8 +101,17 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        bool DEBUG_NOW = false;//current_attempt > 2000;
+        if (DEBUG_NOW) {
+            cout << "Current attempt: flip " << cell_to_flip << " from zone " << geograph.get_assignment(cell_to_flip) << " to zone " << new_part << ".\n";
+        }
+
         auto start = std::chrono::high_resolution_clock::now();
         success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
+        if (DEBUG_NOW) {
+            cout << "Result: " << (success ? "success\n" : "failure"); 
+            cout << "\n";
+        }
         auto stop = std::chrono::high_resolution_clock::now();
         total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_flips_with_result[success]++;
@@ -121,40 +130,45 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            num_reverse_flip_attempts++;
-            // Try reverse flip
-            if (cell_to_flip == cell_1) {
-                cell_to_flip = cell_2;
-                new_part = part_1;
-            } else {
-                cell_to_flip = cell_1;
-                new_part = part_2;
-            }
+            // Try doing nothing instead
+            boundary_faces.erase(boundary_faces.begin() + rand_index);
 
-            start = std::chrono::high_resolution_clock::now();
-            success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
-            stop = std::chrono::high_resolution_clock::now();
-            total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-            count_flips_with_result[success]++;
+            // Previous approach: try reverse flip
             
-            if (success) {
-                // cout << "Reverse flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
-                // Update boundary_faces vector
-                old_boundary_faces.clear();
-            for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
-                boundary_faces.clear();
-                cell_faces = geograph.get_cell_faces();
-                for (size_t i = 0; i < cell_faces.size(); ++i) {
-                    if (cell_faces[i].get_is_boundary() 
-                        && !cell_faces[i].get_is_outer_boundary()) {
-                        boundary_faces.push_back(i);
-                    }
-                }
-            } else {
-                // cout << "Reverse flip failed.\n";
-                // Remove failed face from boundary_faces until next successful flip
-                boundary_faces.erase(boundary_faces.begin() + rand_index);
-            }
+            // num_reverse_flip_attempts++;
+            // // Try reverse flip
+            // if (cell_to_flip == cell_1) {
+            //     cell_to_flip = cell_2;
+            //     new_part = part_1;
+            // } else {
+            //     cell_to_flip = cell_1;
+            //     new_part = part_2;
+            // }
+
+            // start = std::chrono::high_resolution_clock::now();
+            // success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
+            // stop = std::chrono::high_resolution_clock::now();
+            // total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            // count_flips_with_result[success]++;
+            
+            // if (success) {
+            //     // cout << "Reverse flip was successful, cell," << cell_to_flip << ",is now assigned to part," << new_part << ".\n";
+            //     // Update boundary_faces vector
+            //     old_boundary_faces.clear();
+            // for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
+            //     boundary_faces.clear();
+            //     cell_faces = geograph.get_cell_faces();
+            //     for (size_t i = 0; i < cell_faces.size(); ++i) {
+            //         if (cell_faces[i].get_is_boundary() 
+            //             && !cell_faces[i].get_is_outer_boundary()) {
+            //             boundary_faces.push_back(i);
+            //         }
+            //     }
+            // } else {
+            //     // cout << "Reverse flip failed.\n";
+            //     // Remove failed face from boundary_faces until next successful flip
+            //     boundary_faces.erase(boundary_faces.begin() + rand_index);
+            // }
         }
     }
     auto stop_while = std::chrono::high_resolution_clock::now();

@@ -124,38 +124,42 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            // Try reverse flip
-            num_reverse_flip_attempts++;
-            if (cell_to_flip == cell_1) {
-                cell_to_flip = cell_2;
-                new_part = part_1;
-            } else {
-                cell_to_flip = cell_1;
-                new_part = part_2;
-            }
+            // Remove failed face from boundary_faces until next successful flip
+            boundary_faces.erase(boundary_faces.begin() + rand_index);
+            
+            // // Previous approach:
+            // // Try reverse flip
+            // num_reverse_flip_attempts++;
+            // if (cell_to_flip == cell_1) {
+            //     cell_to_flip = cell_2;
+            //     new_part = part_1;
+            // } else {
+            //     cell_to_flip = cell_1;
+            //     new_part = part_2;
+            // }
 
-            start = std::chrono::high_resolution_clock::now();
-            result = geograph.attempt_flip(cell_to_flip, new_part);
-            stop = std::chrono::high_resolution_clock::now();
-            total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-            count_flips_with_result[static_cast<size_t>(result)]++;
+            // start = std::chrono::high_resolution_clock::now();
+            // result = geograph.attempt_flip(cell_to_flip, new_part);
+            // stop = std::chrono::high_resolution_clock::now();
+            // total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            // count_flips_with_result[static_cast<size_t>(result)]++;
 
-            if (result == gg3d::flip_status::success) {
-                // Update boundary_faces vector
-                old_boundary_faces.clear();
-            for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
-                boundary_faces.clear();
-                cell_faces = geograph.get_cell_faces();
-                for (size_t i = 0; i < cell_faces.size(); ++i) {
-                    if (cell_faces[i].get_is_boundary() 
-                        && !cell_faces[i].get_is_outer_boundary()) {
-                        boundary_faces.push_back(i);
-                    }
-                }
-            } else {
-                // Remove failed face from boundary_faces until next successful flip
-                boundary_faces.erase(boundary_faces.begin() + rand_index);
-            }
+            // if (result == gg3d::flip_status::success) {
+            //     // Update boundary_faces vector
+            //     old_boundary_faces.clear();
+            // for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
+            //     boundary_faces.clear();
+            //     cell_faces = geograph.get_cell_faces();
+            //     for (size_t i = 0; i < cell_faces.size(); ++i) {
+            //         if (cell_faces[i].get_is_boundary() 
+            //             && !cell_faces[i].get_is_outer_boundary()) {
+            //             boundary_faces.push_back(i);
+            //         }
+            //     }
+            // } else {
+            //     // Remove failed face from boundary_faces until next successful flip
+            //     boundary_faces.erase(boundary_faces.begin() + rand_index);
+            // }
         }
     }
     auto stop_while = std::chrono::high_resolution_clock::now();

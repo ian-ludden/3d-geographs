@@ -188,9 +188,9 @@ int main(int argc, char *argv[]) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
-    cout << "\nEnter any string to exit: ";
-    string response;
-    std::cin >> response;
-    cout << response;
+    // cout << "\nEnter any string to exit: ";
+    // string response;
+    // std::cin >> response;
+    // cout << response;
 
 } /** end main */

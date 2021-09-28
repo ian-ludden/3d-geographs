@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
             boundary_faces.erase(boundary_faces.begin() + rand_index);
 
             // Previous approach: try reverse flip
-            
+
             // num_reverse_flip_attempts++;
             // // Try reverse flip
             // if (cell_to_flip == cell_1) {
@@ -193,9 +193,9 @@ int main(int argc, char *argv[]) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
-    cout << "\nEnter any string to exit: ";
-    string response;
-    std::cin >> response;
-    cout << response;
+    // cout << "\nEnter any string to exit: ";
+    // string response;
+    // std::cin >> response;
+    // cout << response;
 
 } /** end main */

@@ -548,6 +548,11 @@ public:
 
     /** Returns the number of cells in the graph (i.e., member variable N). */
     size_t num_cells() { return N; }
+
+    /** Returns the size of the augmented neighborhood of a given cell. */
+    size_t count_aug_neighbors(size_t cell_id) {
+        return aug_neighbors[cell_id].size();
+    }
 };
 }
 

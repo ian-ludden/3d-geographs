@@ -57,6 +57,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Print augmented neighborhood sizes
+    cout << "\n";
+    vector<size_t> aug_neighborhood_size_freq; 
+    aug_neighborhood_size_freq.resize(100, 0);
+    for (size_t i = 0; i < geograph.num_cells(); ++i) {
+        size_t aug_neighborhood_size = geograph.count_aug_neighbors(i);
+        aug_neighborhood_size_freq[aug_neighborhood_size] += 1;
+    }
+    cout << "Augmented neighborhood size frequencies:\nSize\tCount\n";
+    for (size_t i = 0; i < aug_neighborhood_size_freq.size(); ++i) {
+        if (aug_neighborhood_size_freq[i] > 0) {
+            cout << i << "\t" << aug_neighborhood_size_freq[i] << "\n";
+        }
+    }
+    cout << "\n";
+
     size_t num_flip_attempts = 10000;
     size_t num_reverse_flip_attempts = 0;
     size_t current_attempt = 0;
@@ -188,9 +204,9 @@ int main(int argc, char *argv[]) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
-    // cout << "\nEnter any string to exit: ";
-    // string response;
-    // std::cin >> response;
-    // cout << response;
+    cout << "\nEnter any string to exit: ";
+    string response;
+    std::cin >> response;
+    cout << response;
 
 } /** end main */

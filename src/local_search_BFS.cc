@@ -4,6 +4,12 @@
  * using BFS for contiguity verification (as opposed to 3-D geo-graphs 
  * for spherical verification, as in local_search.cc). 
  */
+
+#ifndef DEBUG 
+#define DEBUG 1
+#define DEBUG_LOG "bfs_flip_log.csv"
+#endif
+
 #include "geograph3d.hh"
 #include <chrono>
 #include <fstream>
@@ -63,6 +69,11 @@ int main(int argc, char *argv[]) {
     /** Total elapsed time during while loop, rounded to nearest second */
     long total_time_seconds;
 
+    #if DEBUG
+    FILE * fp = fopen(DEBUG_LOG, "w");
+    fprintf(fp, "Cell ID,Giving Zone,Receiving Zone,Status\n");
+    #endif
+
     auto start_while = std::chrono::high_resolution_clock::now();
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
     while (current_attempt < num_flip_attempts && !boundary_faces.empty()) {
@@ -101,17 +112,15 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        bool DEBUG_NOW = false;//current_attempt > 2000;
-        if (DEBUG_NOW) {
-            cout << "Current attempt: flip " << cell_to_flip << " from zone " << geograph.get_assignment(cell_to_flip) << " to zone " << new_part << ".\n";
-        }
+        #if DEBUG
+        fprintf(fp, "%zu,%zu,%zu,", cell_to_flip, geograph.get_assignment(cell_to_flip), new_part);
+        #endif
 
         auto start = std::chrono::high_resolution_clock::now();
         success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
-        if (DEBUG_NOW) {
-            cout << "Result: " << (success ? "success\n" : "failure"); 
-            cout << "\n";
-        }
+        #if DEBUG
+            fprintf(fp, "%s\n", (success ? "success" : "failure"));
+        #endif
         auto stop = std::chrono::high_resolution_clock::now();
         total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_flips_with_result[success]++;
@@ -175,6 +184,10 @@ int main(int argc, char *argv[]) {
     total_time_seconds = std::chrono::duration_cast<std::chrono::seconds>(stop_while - start_while).count();
 
     cout << "Terminated after attempting " << current_attempt << " flips.\n";
+
+    #if DEBUG
+    fclose(fp);
+    #endif
 
     // Summarize timing
     cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";

@@ -3,6 +3,10 @@
  * \brief Implementation of random local search for 3-D partitioning. 
  */
 
+#ifndef CELLS_TO_FLIPS_MULTIPLIER
+#define CELLS_TO_FLIPS_MULTIPLIER 10
+#endif
+
 #ifndef DEBUG 
 #define DEBUG 1
 #define DEBUG_LOG "local_search_log.csv"
@@ -88,8 +92,8 @@ int main(int argc, char *argv[]) {
     }
     cout << "\n";
 
-    /* TODO : Make number of flips a multiple of number of units */
-    size_t num_flip_attempts = 10000;
+    /* Attempt a number of flips proportional to number of cells */
+    size_t num_flip_attempts = CELLS_TO_FLIPS_MULTIPLIER * geograph.num_cells();
     size_t current_attempt = 0;
 
     /** Total time spent on attempt_flip, in microseconds, separated based on result */

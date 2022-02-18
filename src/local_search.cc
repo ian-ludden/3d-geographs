@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
     }
     cout << "\n";
 
+    /* TODO : Make number of flips a multiple of number of units */
     size_t num_flip_attempts = 10000;
     size_t num_reverse_flip_attempts = 0;
     size_t current_attempt = 0;
@@ -102,6 +103,10 @@ int main(int argc, char *argv[]) {
     log_file.open(DEBUG_LOG);
     log_file << "Cell ID,Giving Zone,Receiving Zone,Status\n";
     #endif
+
+    /* TODO : Consider changing initial assignment, 
+    or running for several flips aiming for balanced zones 
+    before running timing analysis for random flips. */
 
     auto start_while = std::chrono::high_resolution_clock::now();
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
@@ -144,6 +149,11 @@ int main(int argc, char *argv[]) {
         #if DEBUG
         log_file << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
         #endif
+
+        /* TODO : Add BFS check with "spherical oracle", that is, 
+        only flip if maintains spherical zones, but check with BFS too.
+        Allows for side-by=side comparison of 3DGG and BFS, 
+        both in terms of time and success/failure. */
 
         auto start = std::chrono::high_resolution_clock::now();
         result = geograph.attempt_flip(cell_to_flip, new_part);

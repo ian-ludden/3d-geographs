@@ -8,15 +8,15 @@
 #endif
 
 #ifndef DEBUG 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_LOG "local_search_log.csv"
 #define RANDOM_SEED 42
 #define MILESTONE_COUNT_ATTEMPTS 1000
 #endif
 
-// Flag for pausing terminal before exiting
+// Flag for pausing terminal before exiting (used when testing)
 #ifndef PAUSE
-#define PAUSE 1
+#define PAUSE 0
 #endif
 
 #include "geograph3d.hh"

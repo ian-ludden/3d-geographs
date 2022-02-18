@@ -8,6 +8,12 @@
 #ifndef DEBUG 
 #define DEBUG 1
 #define DEBUG_LOG "bfs_flip_log.csv"
+#define RANDOM_SEED 42
+#endif
+
+// Flag for pausing terminal before exiting
+#ifndef PAUSE
+#define PAUSE 1
 #endif
 
 #include "geograph3d.hh"
@@ -70,8 +76,10 @@ int main(int argc, char *argv[]) {
     long total_time_seconds;
 
     #if DEBUG
-    FILE * fp = fopen(DEBUG_LOG, "w");
-    fprintf(fp, "Cell ID,Giving Zone,Receiving Zone,Status\n");
+    srand(RANDOM_SEED);
+    std::ofstream log_file;
+    log_file.open(DEBUG_LOG);
+    log_file << "Cell ID,Giving Zone,Receiving Zone,Status\n";
     #endif
 
     auto start_while = std::chrono::high_resolution_clock::now();
@@ -113,13 +121,13 @@ int main(int argc, char *argv[]) {
         }
 
         #if DEBUG
-        fprintf(fp, "%zu,%zu,%zu,", cell_to_flip, geograph.get_assignment(cell_to_flip), new_part);
+        log_file << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
         #endif
 
         auto start = std::chrono::high_resolution_clock::now();
         success = geograph.attempt_flip_BFS(cell_to_flip, new_part);
         #if DEBUG
-            fprintf(fp, "%s\n", (success ? "success" : "failure"));
+        log_file << (success ? "success" : "failure") << "\n";
         #endif
         auto stop = std::chrono::high_resolution_clock::now();
         total_flip_verification_time_us[success] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
@@ -186,7 +194,7 @@ int main(int argc, char *argv[]) {
     cout << "Terminated after attempting " << current_attempt << " flips.\n";
 
     #if DEBUG
-    fclose(fp);
+    log_file.close();
     #endif
 
     // Summarize timing
@@ -206,9 +214,11 @@ int main(int argc, char *argv[]) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
-    // cout << "\nEnter any string to exit: ";
-    // string response;
-    // std::cin >> response;
-    // cout << response;
+    #if PAUSE
+    cout << "\nEnter any string to exit: ";
+    string response;
+    std::cin >> response;
+    cout << response;
+    #endif
 
 } /** end main */

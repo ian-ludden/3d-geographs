@@ -2,6 +2,18 @@
  * \file local_search.cc 
  * \brief Implementation of random local search for 3-D partitioning. 
  */
+
+#ifndef DEBUG 
+#define DEBUG 1
+#define DEBUG_LOG "gg3d_flip_log.csv"
+#define RANDOM_SEED 42
+#endif
+
+// Flag for pausing terminal before exiting
+#ifndef PAUSE
+#define PAUSE 1
+#endif
+
 #include "geograph3d.hh"
 #include <chrono>
 #include <fstream>
@@ -84,6 +96,13 @@ int main(int argc, char *argv[]) {
     /** Total elapsed time during while loop, rounded to nearest second */
     long total_time_seconds;
 
+    #if DEBUG
+    srand(RANDOM_SEED);
+    std::ofstream log_file;
+    log_file.open(DEBUG_LOG);
+    log_file << "Cell ID,Giving Zone,Receiving Zone,Status\n";
+    #endif
+
     auto start_while = std::chrono::high_resolution_clock::now();
     // Randomly select from boundary_faces, then try a flip from smaller part to larger
     while (current_attempt < num_flip_attempts && !boundary_faces.empty()) {
@@ -122,8 +141,15 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        #if DEBUG
+        log_file << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
+        #endif
+
         auto start = std::chrono::high_resolution_clock::now();
         result = geograph.attempt_flip(cell_to_flip, new_part);
+        #if DEBUG
+        log_file << gg3d::flip_status_string(result) << "\n";
+        #endif
         auto stop = std::chrono::high_resolution_clock::now();
         total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_flips_with_result[static_cast<size_t>(result)]++;
@@ -182,6 +208,10 @@ int main(int argc, char *argv[]) {
     total_time_seconds = std::chrono::duration_cast<std::chrono::seconds>(stop_while - start_while).count();
 
     cout << "Terminated after attempting " << current_attempt << " flips.\n\n";
+    
+    #if DEBUG
+    log_file.close();
+    #endif
 
     // Summarize timing
     cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";
@@ -204,9 +234,11 @@ int main(int argc, char *argv[]) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }
 
+    #if PAUSE
     cout << "\nEnter any string to exit: ";
     string response;
     std::cin >> response;
     cout << response;
+    #endif
 
 } /** end main */

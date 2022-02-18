@@ -502,6 +502,21 @@ public:
     bool attempt_flip_BFS(size_t &cell_id, size_t &new_part);
 
     /**
+     * Checks whether flipping a cell to a new part 
+     * maintains contiguous, but not necessarily spherical, zones (parts). 
+     * Unlike `attempt_flip_BFS`, does not actually perform the flip 
+     * if it would be successful. 
+     * 
+     * \param[in] (cell_id) The ID of the cell to be flipped
+     * \param[in] (new_part) The part to which cell_id would be moved. 
+     *                       Enforced to be between 1 and K, inclusive; 
+     *                       otherwise, throws an invalid_argument exception. 
+     * 
+     * \return true if the flip would succeed, false if it is rejected
+     */
+    bool check_flip_BFS(size_t &cell_id, size_t &new_part);
+
+    /**
      * Setter for assignment member variable. 
      * 
      * \param[in] (assignment) New assignments, as a vector of part IDs (1 to K) 

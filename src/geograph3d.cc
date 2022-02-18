@@ -736,6 +736,32 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
  * \return true if the flip succeeds, false if it is rejected
  */
 bool geograph3d::attempt_flip_BFS(size_t &cell_id, size_t &new_part) { 
+    bool flip_will_succeed = check_flip_BFS(cell_id, new_part);
+    
+    if (flip_will_succeed) {
+        size_t old_part = assignment[cell_id];
+        assignment[cell_id] = new_part;
+        this->update_boundary_faces(cell_id, old_part, new_part);
+        this->update_part_sizes(old_part, new_part);
+    }
+    
+    return flip_will_succeed;
+}
+
+/**
+ * Checks whether flipping a cell to a new part 
+ * maintains contiguous, but not necessarily spherical, zones (parts). 
+ * Unlike `attempt_flip_BFS`, does not actually perform the flip 
+ * if it would be successful. 
+ * 
+ * \param[in] (cell_id) The ID of the cell to be flipped
+ * \param[in] (new_part) The part to which cell_id would be moved. 
+ *                       Enforced to be between 1 and K, inclusive; 
+ *                       otherwise, throws an invalid_argument exception. 
+ * 
+ * \return true if the flip would succeed, false if it is rejected
+ */
+bool geograph3d::check_flip_BFS(size_t &cell_id, size_t &new_part) {
     // Validate new_part (must be between 1 and K, inclusive)
     if (new_part < 1 || new_part > K) {
         throw std::invalid_argument("New part must be between 1 and K, inclusive.");
@@ -795,13 +821,6 @@ bool geograph3d::attempt_flip_BFS(size_t &cell_id, size_t &new_part) {
             // Stop early if all zone neighbors have been visited
             if (unvisited_neighbors.empty()) break;
         }
-    }
-
-    if (unvisited_neighbors.empty()) {
-        size_t old_part = assignment[cell_id];
-        assignment[cell_id] = new_part;
-        this->update_boundary_faces(cell_id, old_part, new_part);
-        this->update_part_sizes(old_part, new_part);
     }
 
     return unvisited_neighbors.empty(); 

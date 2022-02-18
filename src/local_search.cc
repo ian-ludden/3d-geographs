@@ -5,8 +5,9 @@
 
 #ifndef DEBUG 
 #define DEBUG 1
-#define DEBUG_LOG "gg3d_flip_log.csv"
+#define DEBUG_LOG "local_search_log.csv"
 #define RANDOM_SEED 42
+#define MILESTONE_COUNT_ATTEMPTS 1000
 #endif
 
 // Flag for pausing terminal before exiting
@@ -52,12 +53,14 @@ int main(int argc, char *argv[]) {
     count_g_edges = count_g_edges / 2; // Every edge is double-counted when summing adjacency list sizes
     cout << "The cell adjacency graph has " << geograph.g.size << " vertices and " << count_g_edges << " edges.\n\n";
 
-    // // Print cell part assignments
-    // cout << "Current assignments:\n";
-    // vector<size_t> current_assignment = geograph.get_assignment();
-    // for (size_t i = 0; i < current_assignment.size(); ++i) {
-    //     cout << i << " to part " << current_assignment[i] << "\n";
-    // }
+    // Print cell part assignments
+    cout << "Current assignments:\nCell ID,Part ID\n";
+    vector<size_t> current_assignment = geograph.get_assignment();
+    for (size_t i = 0; i < current_assignment.size(); ++i) {
+        if (current_assignment[i] != 1) {
+            cout << i << "," << current_assignment[i] << "\n";
+        }
+    }
 
     // Build set of current boundary faces
     vector<size_t> boundary_faces;
@@ -87,21 +90,25 @@ int main(int argc, char *argv[]) {
 
     /* TODO : Make number of flips a multiple of number of units */
     size_t num_flip_attempts = 10000;
-    size_t num_reverse_flip_attempts = 0;
     size_t current_attempt = 0;
 
     /** Total time spent on attempt_flip, in microseconds, separated based on result */
-    long total_flip_verification_time_us[6] = {0, 0, 0, 0, 0, 0}; // There are six statuses in gg3d::flip_status enum
+    long total_gg3d_flip_time_us[6] = {0, 0, 0, 0, 0, 0}; // There are six statuses in gg3d::flip_status enum
     /** Number of flips with each possible result */
-    size_t count_flips_with_result[6] = {0, 0, 0, 0, 0, 0};
+    size_t count_gg3d_flips_with_result[6] = {0, 0, 0, 0, 0, 0};
     /** Total elapsed time during while loop, rounded to nearest second */
     long total_time_seconds;
+
+    /** Total time spent on check_flip_BFS, in microseconds, separated by failure (0) / success (1) */
+    long total_BFS_flip_time_us[2] = {0, 0};
+    /** Number of failures (0) and successes (1) on check_flip_BFS */
+    size_t count_BFS_flips_with_result[2] = {0, 0};
 
     #if DEBUG
     srand(RANDOM_SEED);
     std::ofstream log_file;
     log_file.open(DEBUG_LOG);
-    log_file << "Cell ID,Giving Zone,Receiving Zone,Status\n";
+    log_file << "Attempt Index,Cell ID,Giving Zone,Receiving Zone,BFS Flip Status,gg3d Flip Status\n";
     #endif
 
     /* TODO : Consider changing initial assignment, 
@@ -113,7 +120,9 @@ int main(int argc, char *argv[]) {
     while (current_attempt < num_flip_attempts && !boundary_faces.empty()) {
         current_attempt++;
 
-        if (current_attempt % 1000 == 0) cout << "Flip #" << current_attempt / 1000 << " thousand of " << num_flip_attempts << ".\n";
+        #if DEBUG
+        if (current_attempt % MILESTONE_COUNT_ATTEMPTS == 0) cout << "Flip #" << current_attempt << "\n";
+        #endif
 
         auto rand_index = rand() % boundary_faces.size();
         size_t boundary_face_index = boundary_faces[rand_index];
@@ -147,22 +156,32 @@ int main(int argc, char *argv[]) {
         }
 
         #if DEBUG
-        log_file << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
+        log_file << current_attempt << "," << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
         #endif
 
-        /* TODO : Add BFS check with "spherical oracle", that is, 
-        only flip if maintains spherical zones, but check with BFS too.
+        /* Check whether flip maintains contiguity with BFS, 
+        but only make the flip if it maintains spherical zones 
+        (i.e., attempt_flip succeeds). 
         Allows for side-by=side comparison of 3DGG and BFS, 
         both in terms of time and success/failure. */
 
         auto start = std::chrono::high_resolution_clock::now();
+        bool bfs_result = geograph.check_flip_BFS(cell_to_flip, new_part);
+        #if DEBUG
+        log_file << (bfs_result ? "success" : "failure") << ",";
+        #endif
+        auto stop = std::chrono::high_resolution_clock::now();
+        total_BFS_flip_time_us[bfs_result] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        count_BFS_flips_with_result[bfs_result]++;
+
+        start = std::chrono::high_resolution_clock::now();
         result = geograph.attempt_flip(cell_to_flip, new_part);
         #if DEBUG
         log_file << gg3d::flip_status_string(result) << "\n";
         #endif
-        auto stop = std::chrono::high_resolution_clock::now();
-        total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-        count_flips_with_result[static_cast<size_t>(result)]++;
+        stop = std::chrono::high_resolution_clock::now();
+        total_gg3d_flip_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        count_gg3d_flips_with_result[static_cast<size_t>(result)]++;
         if (result == gg3d::flip_status::success) {
             // Update boundary_faces vector
             old_boundary_faces.clear();
@@ -178,41 +197,8 @@ int main(int argc, char *argv[]) {
         } else {
             // Remove failed face from boundary_faces until next successful flip
             boundary_faces.erase(boundary_faces.begin() + rand_index);
-            
-            // // Previous approach:
-            // // Try reverse flip
-            // num_reverse_flip_attempts++;
-            // if (cell_to_flip == cell_1) {
-            //     cell_to_flip = cell_2;
-            //     new_part = part_1;
-            // } else {
-            //     cell_to_flip = cell_1;
-            //     new_part = part_2;
-            // }
-
-            // start = std::chrono::high_resolution_clock::now();
-            // result = geograph.attempt_flip(cell_to_flip, new_part);
-            // stop = std::chrono::high_resolution_clock::now();
-            // total_flip_verification_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-            // count_flips_with_result[static_cast<size_t>(result)]++;
-
-            // if (result == gg3d::flip_status::success) {
-            //     // Update boundary_faces vector
-            //     old_boundary_faces.clear();
-            // for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);
-            //     boundary_faces.clear();
-            //     cell_faces = geograph.get_cell_faces();
-            //     for (size_t i = 0; i < cell_faces.size(); ++i) {
-            //         if (cell_faces[i].get_is_boundary() 
-            //             && !cell_faces[i].get_is_outer_boundary()) {
-            //             boundary_faces.push_back(i);
-            //         }
-            //     }
-            // } else {
-            //     // Remove failed face from boundary_faces until next successful flip
-            //     boundary_faces.erase(boundary_faces.begin() + rand_index);
-            // }
         }
+        
     }
     auto stop_while = std::chrono::high_resolution_clock::now();
     total_time_seconds = std::chrono::duration_cast<std::chrono::seconds>(stop_while - start_while).count();
@@ -225,20 +211,31 @@ int main(int argc, char *argv[]) {
 
     // Summarize timing
     cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";
-    size_t total_calls_attempt_flip = current_attempt + num_reverse_flip_attempts;
-    cout << "Total calls to attempt_flip (including reverse flip attempts):," << total_calls_attempt_flip << "\n";
+    size_t total_calls_attempt_flip = current_attempt;
+    cout << "Total calls to attempt_flip:," << total_calls_attempt_flip << "\n";
     cout << "Average time spent in attempt_flip:\n"; 
     for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
         flip_status status = static_cast<flip_status>(status_val);
-        cout << "\tWith result " << gg3d::flip_status_string(status) << ":," << total_flip_verification_time_us[status_val] * 1.0 / count_flips_with_result[status_val] << ",microseconds over," << count_flips_with_result[status_val] << ",samples.\n";
+        cout << "\tWith result " << gg3d::flip_status_string(status) << ":," << total_gg3d_flip_time_us[status_val] * 1.0 / count_gg3d_flips_with_result[status_val] << ",microseconds over," << count_gg3d_flips_with_result[status_val] << ",samples.\n";
     }
     cout << "\n";
 
-    long sum_total_flip_verification_times = 0;
-    for (int i = 0; i < 6; ++i) sum_total_flip_verification_times += total_flip_verification_time_us[i];
-    float average_time_attempt_flip = sum_total_flip_verification_times * 1.0 / total_calls_attempt_flip;
-    cout << "Average time spent in attempt_flip:," << average_time_attempt_flip << " microseconds\n";
+    long sum_total_gg3d_flip_times = 0;
+    for (int i = 0; i < 6; ++i) sum_total_gg3d_flip_times += total_gg3d_flip_time_us[i];
+    float average_time_gg3d_flip = sum_total_gg3d_flip_times * 1.0 / total_calls_attempt_flip;
+    cout << "Average time spent in attempt_flip:," << average_time_gg3d_flip << " microseconds\n";
 
+    size_t total_calls_check_flip_BFS = current_attempt;
+    cout << "Total calls to check_flip_BFS:," << total_calls_check_flip_BFS << "\n";
+    cout << "Average time spent in check_flip_BFS:\n"; 
+    cout << "\tWith success:," << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1] << " microseconds over," << count_BFS_flips_with_result[1] << ",samples.\n";
+    cout << "\tWith failure:," << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0] << " microseconds over," << count_BFS_flips_with_result[0] << ",samples.\n";
+    cout << "\n";
+
+    float average_time_check_flip_BFS = (total_BFS_flip_time_us[0] + total_BFS_flip_time_us[1]) * 1.0 / total_calls_check_flip_BFS;
+    cout << "Average time spent in check_flip_BFS:," << average_time_check_flip_BFS << ",microseconds.\n";
+
+    // Summarize new parts (zones)
     cout << "\nNew part sizes:\n";
     for (size_t i = 1; i <= geograph.num_parts(); ++i) {
         cout << i << "," << geograph.get_part_size(i) << "\n";

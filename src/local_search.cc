@@ -8,7 +8,7 @@
 #endif
 
 #ifndef DEBUG 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_LOG "local_search_log.csv"
 #define RANDOM_SEED 42
 #define MILESTONE_COUNT_ATTEMPTS 1000
@@ -182,11 +182,18 @@ int main(int argc, char *argv[]) {
         result = geograph.attempt_flip(cell_to_flip, new_part);
         #if DEBUG
         log_file << gg3d::flip_status_string(result) << "\n";
+        if ((cell_to_flip == 283) || (cell_to_flip == 284)) {
+            cout << "\n***Result***" << gg3d::flip_status_string(result) << "(BFS: " << bfs_result << ")\n\n";
+        }
         #endif
         stop = std::chrono::high_resolution_clock::now();
         total_gg3d_flip_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_gg3d_flips_with_result[static_cast<size_t>(result)]++;
         if (result == gg3d::flip_status::success) {
+            if (!bfs_result) {
+                cout << "unexpected scenario: BFS flip fails, gg3d flip succeeds\n";
+            }
+
             // Update boundary_faces vector
             old_boundary_faces.clear();
             for (auto &boundary_face_id : boundary_faces) old_boundary_faces.push_back(boundary_face_id);

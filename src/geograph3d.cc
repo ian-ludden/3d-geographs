@@ -522,6 +522,15 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
         throw std::invalid_argument("New part must be between 1 and K, inclusive.");
     }
 
+    if ((cell_id == 283) || (cell_id == 284)) {
+        cout << "Attempting to flip cell " << cell_id << " from zone " << assignment[cell_id] << " to " << new_part << "\n";
+
+        for (size_t j = 0; j < aug_neighbors[cell_id].size(); ++j) {
+            augmented_neighbor other = aug_neighbors[cell_id][j];
+            cout << "Aug neighbor " << other.id << " assigned to zone " << assignment[other.id] << "\n";
+        }
+    }
+
     /** Construct S_1, the set of shared faces, edges, and vertices 
      * between the cell to flip and its current (i.e., giving) zone */
     vector<string> S_1;
@@ -778,6 +787,9 @@ bool geograph3d::check_flip_BFS(size_t &cell_id, size_t &new_part) {
     std::set<size_t> unvisited_neighbors;
     for (auto &neighbor_id : g.adjacency_list[cell_id]) {
         if (assignment[neighbor_id] == assignment[cell_id]) unvisited_neighbors.insert(neighbor_id);
+        if ((cell_id == 283) || (cell_id == 284)) {
+            cout << "Neighbor " << neighbor_id << " is in zone " << assignment[neighbor_id] << "\n";
+        }
     }
 
     // Make sure unvisited_neighbors is not empty (if it is, then flip fails)

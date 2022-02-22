@@ -522,15 +522,6 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
         throw std::invalid_argument("New part must be between 1 and K, inclusive.");
     }
 
-    if ((cell_id == 283) || (cell_id == 284)) {
-        cout << "Attempting to flip cell " << cell_id << " from zone " << assignment[cell_id] << " to " << new_part << "\n";
-
-        for (size_t j = 0; j < aug_neighbors[cell_id].size(); ++j) {
-            augmented_neighbor other = aug_neighbors[cell_id][j];
-            cout << "Aug neighbor " << other.id << " assigned to zone " << assignment[other.id] << "\n";
-        }
-    }
-
     /** Construct S_1, the set of shared faces, edges, and vertices 
      * between the cell to flip and its current (i.e., giving) zone */
     vector<string> S_1;
@@ -710,13 +701,24 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
         }
     }
 
+    /** Construct the set of nodes representing edges and vertices 
+     * on the boundary of the shared surface with the receiving zone (boundary of S_2). 
+     * This function returns a sorted vector. */
+    vector<string> S_2_boundary;
+    try {
+        S_2_boundary = boundary_vertices_and_edges_of_shared_surface(cell_id, S_2);
+    } catch (std::invalid_argument &invalid_arg_exception) {
+        std::cerr << invalid_arg_exception.what();
+        return flip_status::fail_5; // Should probably introduce a new failure status for successful flips that fail to update boundaries
+    }
+
     vector<string> new_internal_elements;
     vector<string> S_2_vertices_and_edges;
     std::set_union(S_2_vertices_sorted.begin(), S_2_vertices_sorted.end(),
                    S_2_edges_sorted.begin(), S_2_edges_sorted.end(), 
                    std::back_inserter(S_2_vertices_and_edges));
     std::set_difference(S_2_vertices_and_edges.begin(), S_2_vertices_and_edges.end(), 
-                        Y_v.begin(), Y_v.end(), 
+                        S_2_boundary.begin(), S_2_boundary.end(), 
                         std::back_inserter(new_internal_elements));
 
     for (auto &element_name : new_internal_elements) {
@@ -787,9 +789,6 @@ bool geograph3d::check_flip_BFS(size_t &cell_id, size_t &new_part) {
     std::set<size_t> unvisited_neighbors;
     for (auto &neighbor_id : g.adjacency_list[cell_id]) {
         if (assignment[neighbor_id] == assignment[cell_id]) unvisited_neighbors.insert(neighbor_id);
-        if ((cell_id == 283) || (cell_id == 284)) {
-            cout << "Neighbor " << neighbor_id << " is in zone " << assignment[neighbor_id] << "\n";
-        }
     }
 
     // Make sure unvisited_neighbors is not empty (if it is, then flip fails)

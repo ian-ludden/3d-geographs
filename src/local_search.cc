@@ -1,6 +1,6 @@
 /**
  * \file local_search.cc 
- * \brief Implementation of random local search for 3-D partitioning. 
+ * \brief Implementation of random local search for 3D partitioning. 
  */
 
 #ifndef CELLS_TO_FLIPS_MULTIPLIER
@@ -161,6 +161,16 @@ int main(int argc, char *argv[]) {
 
         #if DEBUG
         log_file << current_attempt << "," << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",";
+        // cout << current_attempt << "," << cell_to_flip << "," << geograph.get_assignment(cell_to_flip) << "," << new_part << ",\n";
+        
+        // if (cell_to_flip == 207) {
+        // cout << "boundary face at index " << boundary_face_index << ": f" << cell_faces[boundary_face_index].id << " with vertices \n";
+        // for (auto &vertex_id : cell_faces[boundary_face_index].vertices) {
+        //     cout << "v" << vertex_id << " -- (" << cell_vertices[vertex_id].pos[0] << "," << cell_vertices[vertex_id].pos[1] << "," << cell_vertices[vertex_id].pos[2] << ")\n";
+        // }
+        // cout << "\n";
+        // }
+        
         #endif
 
         /* Check whether flip maintains contiguity with BFS, 
@@ -171,22 +181,21 @@ int main(int argc, char *argv[]) {
 
         auto start = std::chrono::high_resolution_clock::now();
         bool bfs_result = geograph.check_flip_BFS(cell_to_flip, new_part);
+        auto stop = std::chrono::high_resolution_clock::now();
         #if DEBUG
         log_file << (bfs_result ? "success" : "failure") << ",";
+        // cout << (bfs_result ? "success" : "failure") << ",";
         #endif
-        auto stop = std::chrono::high_resolution_clock::now();
         total_BFS_flip_time_us[bfs_result] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_BFS_flips_with_result[bfs_result]++;
 
         start = std::chrono::high_resolution_clock::now();
         result = geograph.attempt_flip(cell_to_flip, new_part);
+        stop = std::chrono::high_resolution_clock::now();
         #if DEBUG
         log_file << gg3d::flip_status_string(result) << "\n";
-        if ((cell_to_flip == 283) || (cell_to_flip == 284)) {
-            cout << "\n***Result***" << gg3d::flip_status_string(result) << "(BFS: " << bfs_result << ")\n\n";
-        }
+        // cout << gg3d::flip_status_string(result) << "\n";
         #endif
-        stop = std::chrono::high_resolution_clock::now();
         total_gg3d_flip_time_us[static_cast<size_t>(result)] += std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
         count_gg3d_flips_with_result[static_cast<size_t>(result)]++;
         if (result == gg3d::flip_status::success) {

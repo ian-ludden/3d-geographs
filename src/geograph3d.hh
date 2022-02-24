@@ -238,6 +238,8 @@ private:
     vector<cell_edge> cell_edges;
     /** List of cell faces */
     vector<cell_face> cell_faces;
+    /** List of cell IDs */
+    vector<size_t> cell_ids;
 
     /**
      * Generates an initial assignment that achieves spherical zones, 
@@ -255,24 +257,26 @@ private:
      * For a uniform grid of unit cubes, this prioritizes corners. 
      */
     void generate_initial_assignment() {
-        vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone
-        vector<int> num_wall_neighbors; // Number of neighbors of each cell that are walls
-        vector<int> singleton_zone_cells; // Indices of cells used to create singleton zones
+        vector<bool> is_adjacent_to_singleton; // Indicators of whether each cell is adjacent to a singleton zone, indexed by cell ID
+        vector<int> num_wall_neighbors; // Number of neighbors of each cell that are walls, indexed by cell ID
+        vector<int> singleton_zone_cells; // IDs of cells used to create singleton zones
 
         is_adjacent_to_singleton.resize(N, false);
         num_wall_neighbors.resize(N, 0);
         for (size_t i = 0; i < N; ++i) {
-            for (auto & i_neighbor : this->neighbors[i]) {
-                if (i_neighbor < 0) ++num_wall_neighbors[i];
+            size_t cell_id = cell_ids[i];
+            for (auto &neighbor_id : this->neighbors[cell_id]) {
+                if (neighbor_id < 0) ++num_wall_neighbors[cell_id];
             }
         }
         
         while (singleton_zone_cells.size() < (size_t) K - 1) {
             int new_singleton_index = -1;
             for (size_t i = 0; i < N; ++i) {
-                if (!is_adjacent_to_singleton[i]) {
+                size_t cell_id = cell_ids[i];
+                if (!is_adjacent_to_singleton[cell_id]) {
                     if (new_singleton_index < 0 
-                        || num_wall_neighbors[i] > num_wall_neighbors[new_singleton_index]) {
+                        || num_wall_neighbors[cell_id] > num_wall_neighbors[cell_ids[new_singleton_index]]) {
                         new_singleton_index = i;
                     }
                 }
@@ -282,8 +286,8 @@ private:
                 throw std::runtime_error("Failed to find a valid new singleton zone.");
             }
             singleton_zone_cells.push_back(new_singleton_index);
-            is_adjacent_to_singleton[new_singleton_index] = true; // Consider singleton adjacent to itself to remove from candidates
-            for (auto & neighbor_id : g.adjacency_list[new_singleton_index]) {
+            is_adjacent_to_singleton[cell_ids[new_singleton_index]] = true; // Consider singleton adjacent to itself to remove from candidates
+            for (auto & neighbor_id : g.adjacency_list[cell_ids[new_singleton_index]]) {
                 is_adjacent_to_singleton[neighbor_id] = true; // Remove non-wall neighbors from candidates
             }
         }
@@ -292,9 +296,10 @@ private:
         vector<size_t> init_assignment;
         init_assignment.resize(N, 1);
         size_t zone_index = 2;
-        for (auto & singleton : singleton_zone_cells) {
+        for (auto & singleton_cell_index : singleton_zone_cells) {
+            size_t singleton_id = cell_ids[singleton_cell_index];
             part_sizes[zone_index] = 1;
-            init_assignment[singleton] = zone_index++;
+            init_assignment[singleton_id] = zone_index++;
         }
         part_sizes[1] = N - singleton_zone_cells.size();
         set_assignment(init_assignment);

@@ -160,28 +160,29 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     // Edges of cell adjacency graph
     vector<Edge> g_edges;
 
-    // List of vertex indices (by ID) for each cell, indexed by cell ID
+    // List of vertex indices (by ID) for each cell, indexed by cell *index* (not ID)
     vector<vector<size_t>> vertex_indices;
-    // List of face indices (by ID) for each cell, indexed by cell ID
+    // List of face indices (by ID) for each cell, indexed by cell *index* (not ID)
     vector<vector<size_t>> face_indices;
 
     in_file >> row; // Skip row of column headers
 
-    size_t cell_id;
     // size_t num_neighbors;
 
-    neighbors.reserve(N);
+    neighbors.resize(N);
     aug_neighbors.resize(N);
+    surface_poset_graphs.resize(N);
 
     // Read each row and store info for that cell
     while (in_file >> row) {
         vector<int> cell_neighbors_ints; // Temp list of neighbor IDs as type int
         vector<int> cell_neighbors; // Temp list of neighbor IDs as type size_t
-        cell_id = stoi(row[0]);
+        size_t cell_id = stoi(row[0]);
+        cell_ids.push_back(cell_id);
         // num_neighbors = stoi(row[1]);
         cell_neighbors = delimited_list_to_vector_of_int(row[2], ' ');
         
-        neighbors.push_back(cell_neighbors);
+        neighbors[cell_id] = cell_neighbors;
 
         // Add new edges (i.e., to neighbors with greater ID)
         for (int &neighbor_id : cell_neighbors) {
@@ -315,12 +316,14 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
 
     // Find all augmented neighbor relationships
     for (size_t i = 0; i < N; ++i) {
+        size_t cell_id_i = cell_ids[i];
         vector<size_t> face_indices_i = face_indices[i];
         std::sort(face_indices_i.begin(), face_indices_i.end());
         vector<size_t> vertex_indices_i = vertex_indices[i];
         std::sort(vertex_indices_i.begin(), vertex_indices_i.end());
 
         for (size_t j = i + 1; j < N; ++j) {
+            size_t cell_id_j = cell_ids[j];
             vector<size_t> face_indices_j = face_indices[j];
             std::sort(face_indices_j.begin(), face_indices_j.end());
             vector<size_t> vertex_indices_j = vertex_indices[j];
@@ -333,8 +336,8 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
                                   std::back_inserter(shared_vertices));
 
             if (shared_vertices.size() > 0) {
-                augmented_neighbor aug_neighbor_i(i);
-                augmented_neighbor aug_neighbor_j(j);
+                augmented_neighbor aug_neighbor_i(cell_id_i);
+                augmented_neighbor aug_neighbor_j(cell_id_j);
                 aug_neighbor_i.shared_vertices = shared_vertices;
                 aug_neighbor_j.shared_vertices = shared_vertices;
 
@@ -362,8 +365,8 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
                     }
                 } else {} // Shares a single vertex, do nothing
                 
-                aug_neighbors[i].push_back(aug_neighbor_j);
-                aug_neighbors[j].push_back(aug_neighbor_i);
+                aug_neighbors[cell_id_i].push_back(aug_neighbor_j);
+                aug_neighbors[cell_id_j].push_back(aug_neighbor_i);
             }
         }
     }
@@ -410,7 +413,8 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
     }
 
     // Populate first_cell and second_cell for all cell faces
-    for (size_t cell_id_1 = 0; cell_id_1 < this->N; ++cell_id_1) {
+    for (size_t i = 0; i < this->N; ++i) {
+        size_t cell_id_1 = cell_ids[i];
         for (auto &aug_neighbor : aug_neighbors[cell_id_1]) {
             if (aug_neighbor.shared_faces.empty()) continue;
             size_t shared_face_index = aug_neighbor.shared_faces[0];
@@ -426,6 +430,7 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
 
     /** Create surface poset graph for each cell */
     for (size_t i = 0; i < N; ++i) {
+        size_t cell_id = cell_ids[i];
         vector<string> node_names; 
         vector<Edge> sp_edges;
         size_t num_faces = face_indices[i].size();
@@ -480,27 +485,8 @@ geograph3d::geograph3d(const string in_filename, const size_t num_parts)
             }
         }
 
-        // // Debugging degeneracy issues with random Voronoi 20x20x20 instance
-        // if (num_faces + num_edges + num_vertices > node_names.size()) {
-        //     std::cout << "Node names:\n";
-        //     for (auto & node_name : node_names) std::cout << node_name << "\n";
-        //     std::cout << "\n";
-        //     std::cout << "All faces:\n";
-        //     for (auto & face_index : face_indices[i]) std::cout << "f" << face_index << "\n";
-        //     std::cout << "\n";
-        //     std::cout << "All vertices:\n";
-        //     for (auto & vertex_index : vertex_indices[i]) std::cout << "v" << vertex_index << "\n";
-        //     std::cout << "\n";
-        //     std::cout << "All edges of cell's faces:\n";
-        //     for (auto & face_index : face_indices[i]) {
-        //         cell_face face = cell_faces[face_index];
-        //         for (auto & edge_index : face.edges) std::cout << "e" << edge_index << "\n";
-        //     }
-        //     std::cout << "\n";
-        // }
-
         static_graph surface_poset_graph = static_graph(sp_edges, num_faces + num_edges + num_vertices, node_names);
-        surface_poset_graphs.push_back(surface_poset_graph);
+        surface_poset_graphs[cell_id] = surface_poset_graph;
     }
 
     // Now that all member variables are initialized, create initial assignment

@@ -15,7 +15,7 @@
 #include <algorithm>
 using std::string;
 using std::vector;
-\
+
 namespace gg3d {
 /** Convert flip_status enum value to string representation */
 string flip_status_string(flip_status status) {
@@ -661,7 +661,7 @@ flip_status geograph3d::attempt_flip(size_t &cell_id, size_t &new_part) {
      * vertices, edges, and faces. 
      *  - Y_v remains external/boundary. 
      *  - S_1^0 ∪ S_1^1 \ Y_v becomes external/boundary. 
-     *  - S_2^0 ∪ S_2^1 \ Y_v becomes internal/not boundary. 
+     *  - S_2^0 ∪ S_2^1 \ S_2 boundary becomes internal/not boundary. 
      *  - face(s) between cell cell_id and other cells in new_part become internal/not boundary.
      *  - face(s) between cell cell_id and other cells in old_part become part of zone boundary. 
      */

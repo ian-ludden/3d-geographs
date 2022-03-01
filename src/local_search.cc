@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         size_t aug_neighborhood_size = geograph.count_aug_neighbors(i);
         aug_neighborhood_size_freq[aug_neighborhood_size] += 1;
     }
-    cout << "Augmented neighborhood size frequencies:\nSize\tCount\n";
+    cout << "Augmented neighborhood size frequencies\nSize\tCount\n";
     for (size_t i = 0; i < aug_neighborhood_size_freq.size(); ++i) {
         if (aug_neighborhood_size_freq[i] > 0) {
             cout << i << "\t" << aug_neighborhood_size_freq[i] << "\n";
@@ -230,33 +230,33 @@ int main(int argc, char *argv[]) {
     #endif
 
     // Summarize timing
-    cout << "Total elapsed time:," << total_time_seconds << ",seconds\n";
+    cout << "Total elapsed time," << total_time_seconds << ",seconds\n";
     size_t total_calls_attempt_flip = current_attempt;
-    cout << "Total calls to attempt_flip:," << total_calls_attempt_flip << "\n";
-    cout << "Average time spent in attempt_flip:\n"; 
+    cout << "Total calls to attempt_flip," << total_calls_attempt_flip << "\n";
+    cout << "Average time spent in attempt_flip\n"; 
     for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
         flip_status status = static_cast<flip_status>(status_val);
-        cout << "\tWith result " << gg3d::flip_status_string(status) << ":," << total_gg3d_flip_time_us[status_val] * 1.0 / count_gg3d_flips_with_result[status_val] << ",microseconds over," << count_gg3d_flips_with_result[status_val] << ",samples.\n";
+        cout << "\tWith result " << gg3d::flip_status_string(status) << "," << total_gg3d_flip_time_us[status_val] * 1.0 / count_gg3d_flips_with_result[status_val] << ",microseconds over," << count_gg3d_flips_with_result[status_val] << ",samples.\n";
     }
     cout << "\n";
 
     long sum_total_gg3d_flip_times = 0;
     for (int i = 0; i < 6; ++i) sum_total_gg3d_flip_times += total_gg3d_flip_time_us[i];
     float average_time_gg3d_flip = sum_total_gg3d_flip_times * 1.0 / total_calls_attempt_flip;
-    cout << "Average time spent in attempt_flip:," << average_time_gg3d_flip << " microseconds\n";
+    cout << "Average time spent in attempt_flip," << average_time_gg3d_flip << ",microseconds\n";
 
     size_t total_calls_check_flip_BFS = current_attempt;
-    cout << "Total calls to check_flip_BFS:," << total_calls_check_flip_BFS << "\n";
-    cout << "Average time spent in check_flip_BFS:\n"; 
-    cout << "\tWith success:," << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1] << " microseconds over," << count_BFS_flips_with_result[1] << ",samples.\n";
-    cout << "\tWith failure:," << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0] << " microseconds over," << count_BFS_flips_with_result[0] << ",samples.\n";
+    cout << "Total calls to check_flip_BFS," << total_calls_check_flip_BFS << "\n";
+    cout << "Average time spent in check_flip_BFS\n"; 
+    cout << "\tWith success," << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1] << ",microseconds over," << count_BFS_flips_with_result[1] << ",samples.\n";
+    cout << "\tWith failure," << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0] << ",microseconds over," << count_BFS_flips_with_result[0] << ",samples.\n";
     cout << "\n";
 
     float average_time_check_flip_BFS = (total_BFS_flip_time_us[0] + total_BFS_flip_time_us[1]) * 1.0 / total_calls_check_flip_BFS;
-    cout << "Average time spent in check_flip_BFS:," << average_time_check_flip_BFS << ",microseconds.\n";
+    cout << "Average time spent in check_flip_BFS," << average_time_check_flip_BFS << ",microseconds.\n";
 
     // Summarize new parts (zones)
-    cout << "\nNew part sizes:\n";
+    cout << "\nNew part sizes\n";
     for (size_t i = 1; i <= geograph.num_parts(); ++i) {
         cout << i << "," << geograph.get_part_size(i) << "\n";
     }

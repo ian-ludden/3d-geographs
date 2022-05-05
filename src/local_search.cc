@@ -29,11 +29,15 @@
 using std::string;
 using std::vector;
 using std::cout;
+using std::cerr;
 using gg3d::flip_status;
 
 int main(int argc, char *argv[]) {
     string in_filename;
     int K;
+
+    int i;
+    string partition_filename;
     
     if (argc >= 3) {
         in_filename = argv[1];
@@ -41,8 +45,16 @@ int main(int argc, char *argv[]) {
     } else {
         string prog_name = argv[0];
         if (prog_name.empty()) prog_name = "<program name>";
-        cout << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
-        return 0;
+        cerr << "Usage: " << prog_name << " <input_filename> <number_of_parts>\n";
+        return 1;
+    }
+
+    for (i = 1; i < argc; ++i) {
+        if ("--partition" == std::string(argv[i]) 
+            || "-p" == std::string(argv[i])) {
+                if (i + 1 < argc) { partition_filename = argv[++i]; }
+                else { cerr << "--partition (-p) option requires one argument." << std::endl; }
+        }
     }
 
     gg3d::geograph3d geograph = gg3d::geograph3d(in_filename, K);
@@ -267,6 +279,19 @@ int main(int argc, char *argv[]) {
     cout << geograph.num_cells() << ",bfs,failure," << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0] << "," << count_BFS_flips_with_result[0] << "\n";
     cout << geograph.num_cells() << ",bfs,success," << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1] << "," << count_BFS_flips_with_result[1] << "\n";
 
+    if (!(partition_filename.empty())) {
+        // Write final partition to partition_filename
+        std::ofstream partition_file;    
+        partition_file.open(partition_filename);
+        partition_file << "cell_id,part" << std::endl;
+
+        vector<size_t> assignment = geograph.get_assignment();
+        for (size_t i = 0; i < assignment.size(); ++i) {
+            partition_file << i << "," << assignment[i] << std::endl;
+        }
+
+        partition_file.close();
+    }
 
     #if PAUSE
     cout << "\nEnter any string to exit: ";

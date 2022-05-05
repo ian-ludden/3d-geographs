@@ -26,4 +26,4 @@ make
 To then run all the local search experiments, comparing the 3D geo-graph against breadth-first search (BFS), call `./run_all_local_search.sh`. This will create output files `results/local_search_grid.out` and `results/local_search_bcc.out` with flip timing and status details. 
 
 ### Analyze experimental results
-The `results/Experiments_Analysis.ipynb` Jupyter Notebook loads the experimental results from `results/local_search_[bcc/grid].out` and generates plots for publication. 
+The `results/Experiments_Analysis.ipynb` Jupyter Notebook loads the experimental results from `results/data_ch.csv` and `results/data_bch.csv`, which are currently built manually from `results/local_search_[grid/bcc].out`. The notebook then generates plots for publication. 

@@ -269,15 +269,25 @@ int main(int argc, char *argv[]) {
 
 
     // Write timing summary to cout
-    cout << "number of cells,flip type,status,average microseconds,number of samples\n";
+    // cout << "number of cells,flip type,status,average microseconds,number of samples\n";
 
     for (int status_val = flip_status::fail_1; status_val <= flip_status::success; ++status_val) {
         flip_status status = static_cast<flip_status>(status_val);
-        cout << geograph.num_cells() << ",geograph3d," << gg3d::flip_status_string(status) << "," << total_gg3d_flip_time_us[status_val] * 1.0 / count_gg3d_flips_with_result[status_val] << "," << count_gg3d_flips_with_result[status_val] << "\n";
+        cout << geograph.num_parts() << ",";
+        cout << geograph.num_cells() << ",geograph3d,";
+        cout << gg3d::flip_status_string(status) << ",";
+        cout << total_gg3d_flip_time_us[status_val] * 1.0 / count_gg3d_flips_with_result[status_val]; 
+        cout << "," << count_gg3d_flips_with_result[status_val] << "\n";
     }
 
-    cout << geograph.num_cells() << ",bfs,failure," << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0] << "," << count_BFS_flips_with_result[0] << "\n";
-    cout << geograph.num_cells() << ",bfs,success," << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1] << "," << count_BFS_flips_with_result[1] << "\n";
+    cout << geograph.num_parts() << ",";
+    cout << geograph.num_cells() << ",bfs,failure,";
+    cout << total_BFS_flip_time_us[0] * 1.0 / count_BFS_flips_with_result[0];
+    cout << "," << count_BFS_flips_with_result[0] << "\n";
+    cout << geograph.num_parts() << ",";
+    cout << geograph.num_cells() << ",bfs,success,";
+    cout << total_BFS_flip_time_us[1] * 1.0 / count_BFS_flips_with_result[1];
+    cout << "," << count_BFS_flips_with_result[1] << "\n";
 
     if (!(partition_filename.empty())) {
         // Write final partition to partition_filename

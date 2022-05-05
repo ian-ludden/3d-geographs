@@ -5,56 +5,25 @@ timestamp() {
 	date +"%D %T"
 }
 
-# Run all CH and BCH instances with K = 2 zones
-K=2
-
-for fname in ../generate_input/grid/* 
+# Write CSV headers
+for type in grid bcc
 do
-	echo $fname >> ../results/local_search_grid.out
-	echo "K=$K" >> ../results/local_search_grid.out
-	echo "$(timestamp)" >> ../results/local_search_grid.out
-	#./local_search.exe $fname $K >> ../results/local_search_grid.out
+	echo "number of zones,number of cells,flip type,status,average microseconds,number of samples" >> ../results/data_${type}.csv
 done
 
-echo "" >> ../results/local_search_grid.out
-
-echo "$(timestamp)"
-
-for fname in ../generate_input/bcc/* 
+# Run random local search experiments and write results
+for K in {2,8,25}
 do
-	echo $fname >> ../results/local_search_bcc.out
-	echo "K=$K" >> ../results/local_search_bcc.out
-	echo "$(timestamp)" >> ../results/local_search_bcc.out
-	#./local_search.exe $fname $K >> ../results/local_search_bcc.out
+	for type in grid bcc
+	do
+		echo "Start K=${K} for ${type}: $(timestamp)"
+		for fname in ../generate_input/${type}/*
+		do
+			fname_short="$(basename -s .csv ${fname})"
+			./local_search.exe $fname $K --partition ../results/partition_${fname_short}_K${K}.csv >> ../results/data_${type}.csv
+		done
+		echo "End K=${K} for ${type}: $(timestamp)"
+		echo ""
+	done
 done
 
-echo "" >> ../results/local_search_bcc.out
-
-echo "$(timestamp)"
-
-# Repeat all instances for K = 25 zones
-K=25
-
-for fname in ../generate_input/grid/* 
-do
-	echo $fname >> ../results/local_search_grid.out
-	echo "K=$K" >> ../results/local_search_grid.out
-	echo "$(timestamp)" >> ../results/local_search_grid.out
-	#./local_search.exe $fname $K >> ../results/local_search_grid.out
-done
-
-echo "" >> ../results/local_search_grid.out
-
-echo "$(timestamp)"
-
-for fname in ../generate_input/bcc/* 
-do
-	echo $fname >> ../results/local_search_bcc.out
-	echo "K=$K" >> ../results/local_search_bcc.out
-	echo "$(timestamp)" >> ../results/local_search_bcc.out
-	./local_search.exe $fname $K >> ../results/local_search_bcc.out
-done
-
-echo "" >> ../results/local_search_bcc.out
-
-echo "$(timestamp)"

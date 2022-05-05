@@ -15,7 +15,7 @@ cd generate_input
 make 
 ./generate_all_inputs.sh
 ```
-The script will create `grid` and `bcc` folders in `generate_input/` containing the CH and BCH instances, respectively. For each type of honeycomb, the bounding box side length varies from 10 to 40 in increments of 5. 
+The script will create `grid` and `bcc` folders in `generate_input/` containing the CH and BCH instances, respectively. For each type of honeycomb, the bounding box side length varies from 10 to 40 in increments of 5. The entire process takes a few hours on a standard workstation. 
 
 ### Run random local search
 The `src/` folder contains the 3D geo-graph source files and an implementation of random local search for testing the 3D geo-graph. To compile the 3D geo-graph and local search implementation, use 

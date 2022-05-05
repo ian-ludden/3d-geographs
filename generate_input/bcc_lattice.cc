@@ -8,17 +8,11 @@ using namespace voro;
 
 // Define bounding box
 const int x_min = 0;
-// const int x_max = 5;
 const int y_min = 0; 
-// const int y_max = 5;
 const int z_min = 0; 
-// const int z_max = 5; 
-
-// const int box_vol = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
 // Define parameters for container blocks (used to pre-allocate memory for container object)
 const int blocks_x = 1, blocks_y = 1, blocks_z = 1;
-// const int particles_per_block = ((box_vol / blocks_x) / blocks_y) / blocks_z;
 
 int main(int argc, char *argv[]) {
     int index;
@@ -63,8 +57,6 @@ int main(int argc, char *argv[]) {
         oss << "bch_" << side_length << ".csv";
         out_fname = oss.str();
     }
-
-    std::cout << "Built side length " << side_length << ", out_fname " << out_fname << std::endl;
 
     // Set Voro++ parameters
     x_max = side_length;

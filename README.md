@@ -6,7 +6,7 @@ Implementation of three-dimensional geo-graphs, a dynamic data structure for eff
 - (Optional) [Jupyter](https://jupyter.org/) for "Analyze experimental results" step below. The Jupyter Notebook includes several Python module dependencies. 
 
 ## Replication steps
-The following steps 
+(WIP) The following steps replicate the experiments in (paper link when available), starting from a clean clone of this repository. 
 
 ### Generate input files
 The `generate_input/` subfolder contains C++ programs for creating cubic honeycomb (CH) and bitruncated cubic honeycomb (BCH) Voronoi tesselations using Voro++. Commands to compile and run these programs:

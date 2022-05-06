@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p ../tmp/
+
 for type in grid bcc
 do
 	for fname in ${type}/*

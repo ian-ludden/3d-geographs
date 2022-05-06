@@ -31,6 +31,35 @@ colors = np.array([\
 
 colors_str = ['<' + ','.join(list(color.astype(str))) + '>' for color in colors]
 
+def write_pov_header(f, S, K, part=None):
+    f.write('#version 3.6;\n')
+    f.write('// Right-handed coordinate system in which the z-axis points upwards\n')
+    f.write('camera {\n')
+    f.write(f"\tlocation <{3*S}, {-6.5*S}, {4*S}>\n")
+    f.write('\tsky z\n')
+    f.write('\tright -0.22*x*image_width/image_height\n')
+    f.write('\tup 0.22*z\n')
+    f.write(f"\tlook_at <{S/2}, {S/2}, {S/2}>\n")
+    f.write('\t}\n')
+
+    if not part:
+        f.write(f"#declare red_val=0.5;\n");
+        f.write(f"#declare green_val=0.5;\n");
+        f.write(f"#declare blue_val=0.5;\n");
+    else:
+        f.write(f"#declare red_val={colors[part - 1][0]};\n");
+        f.write(f"#declare green_val={colors[part - 1][1]};\n");
+        f.write(f"#declare blue_val={colors[part - 1][2]};\n");
+
+    f.write('// White background\n')
+    f.write('background{rgb 1}\n')
+
+    f.write('// Two lights with slightly different colors\n')
+    f.write('light_source{<-8,-20,30> color rgb <0.77,0.75,0.75>}\n')
+    f.write('light_source{<25,-12,12> color rgb <0.38,0.40,0.40>}\n')
+    f.write('')
+
+
 """
 Generate POV-Ray code for visualizing the Voronoi cell 
 with the given faces and vertices. 
@@ -82,33 +111,20 @@ if __name__ == '__main__':
 
         parts = sorted(list(np.unique(df['Part'])))
 
+        all_out_fname = f"partition_{honeycomb_type}_{S}_K{K}_all.pov"
+        all_f = open(all_out_fname, 'w')
+        write_pov_header(all_f, S, K)
+
         for part in parts:
             out_fname = f"partition_{honeycomb_type}_{S}_K{K}_{part}.pov"
-            with open(out_fname, 'w') as f:
-                f.write('#version 3.6;\n')
-                f.write('// Right-handed coordinate system in which the z-axis points upwards\n')
-                f.write('camera {\n')
-                f.write(f"\tlocation <{3*S}, {-6.5*S}, {4*S}>\n")
-                f.write('\tsky z\n')
-                f.write('\tright -0.22*x*image_width/image_height\n')
-                f.write('\tup 0.22*z\n')
-                f.write(f"\tlook_at <{S/2}, {S/2}, {S/2}>\n")
-                f.write('\t}\n')
-
-                f.write(f"#declare red_val={colors[part - 1][0]};\n");
-                f.write(f"#declare green_val={colors[part - 1][1]};\n");
-                f.write(f"#declare blue_val={colors[part - 1][2]};\n");
-
-                f.write('// White background\n')
-                f.write('background{rgb 1}\n')
-
-                f.write('// Two lights with slightly different colors\n')
-                f.write('light_source{<-8,-20,30> color rgb <0.77,0.75,0.75>}\n')
-                f.write('light_source{<25,-12,12> color rgb <0.38,0.40,0.40>}\n')
-                f.write('')
+            f = open(out_fname, 'w')
+            write_pov_header(f, S, K, part=part)
                 
-                # Write faces of each cell in part, as polygons
-                for idx in df.index:
-                    if df.loc[idx, 'Part'] == part:
-                        cell_str = gen_cell_str(df.loc[idx, 'Faces'].split(' '), df.loc[idx, 'Vertices'].split(' '))
-                        f.write(cell_str)
+            # Write faces of each cell in part, as polygons
+            for idx in df.index:
+                if df.loc[idx, 'Part'] == part:
+                    cell_str = gen_cell_str(df.loc[idx, 'Faces'].split(' '), df.loc[idx, 'Vertices'].split(' '), color_rgb=colors_str[part - 1])
+                    f.write(cell_str)
+                    all_f.write(cell_str)
+
+        all_f.close()

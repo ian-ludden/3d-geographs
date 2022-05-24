@@ -4,9 +4,10 @@ Implementation of three-dimensional geo-graphs, a dynamic data structure for eff
 ## Dependencies
 - [Voro++](http://math.lbl.gov/voro++/), version 0.4.6. See [http://math.lbl.gov/voro++/download/](http://math.lbl.gov/voro++/download/) for download and installation instructions. Used in "Generate input files" step below. 
 - (Optional) [Jupyter](https://jupyter.org/) for "Analyze experimental results" step below. The Jupyter Notebook includes several Python module dependencies. 
+- (Optional) [POV-Ray](https://www.povray.org/download/) for "Visualize final partitions" step below. 
 
-## Replication steps
-(WIP) The following steps replicate the experiments in (paper link when available), starting from a clean clone of this repository. 
+## Replication steps (under development)
+The following steps replicate the experiments in (paper link when available), starting from a clean clone of this repository. 
 
 ### Generate input files
 The `generate_input/` subfolder contains C++ programs for creating cubic honeycomb (CH) and bitruncated cubic honeycomb (BCH) Voronoi tesselations using Voro++. Commands to compile and run these programs:
@@ -28,7 +29,7 @@ To then run all the local search experiments, comparing the 3D geo-graph against
 ### Analyze experimental results
 The `results/Experiments_Analysis.ipynb` Jupyter Notebook loads the experimental results from `results/data_[bcc or grid].csv`. The notebook then generates plots and tables for publication. 
 
-### Visualizing final partitions
+### Visualize final partitions
 The following steps produce PNG files for each final partition and the individual zones. 
 1. Run `generate_input/create_all_semicolon_versions.sh` to produce semicolon-separated versions of the honeycomb input files. 
 2. From the `results` directory, run `python produce_povrays_of_partitions.py`. This creates a POV file for each partition and zone from the semicolon-separated honeycomb files (from Step 1) and the final partition CSV files (from "Run random local search" above). 

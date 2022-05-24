@@ -23,7 +23,13 @@ The `src/` folder contains the 3D geo-graph source files and an implementation o
 cd src
 make
 ```
-To then run all the local search experiments, comparing the 3D geo-graph against breadth-first search (BFS), call `./run_all_local_search.sh`. This will create output files `results/local_search_grid.out` and `results/local_search_bcc.out` with flip timing and status details. 
+To then run all the local search experiments, comparing the 3D geo-graph against breadth-first search (BFS), call `./run_all_local_search.sh`. This will create output files `results/data_[bcc or grid].csv` and `results/partition_[bcc or grid]_K[value of K].out` with flip timing, status details, and final partitions. 
 
 ### Analyze experimental results
-The `results/Experiments_Analysis.ipynb` Jupyter Notebook loads the experimental results from `results/data_ch.csv` and `results/data_bch.csv`, which are currently built manually from `results/local_search_[grid/bcc].out`. The notebook then generates plots for publication. 
+The `results/Experiments_Analysis.ipynb` Jupyter Notebook loads the experimental results from `results/data_[bcc or grid].csv`. The notebook then generates plots and tables for publication. 
+
+### Visualizing final partitions
+The following steps produce PNG files for each final partition and the individual zones. 
+1. Run `generate_input/create_all_semicolon_versions.sh` to produce semicolon-separated versions of the honeycomb input files. 
+2. From the `results` directory, run `python produce_povrays_of_partitions.py`. This creates a POV file for each partition and zone from the semicolon-separated honeycomb files (from Step 1) and the final partition CSV files (from "Run random local search" above). 
+3. (Requires POV-Ray installation) Run `results/run_all_povray.sh` to invoke the POV-Ray engine for each POV file. This produces a PNG file from each POV and moves both to the `results/img/` directory. 

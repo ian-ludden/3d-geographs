@@ -131,7 +131,7 @@ public:
     const size_t id;
     /** IDs of endpoint vertices (0-faces), in increasing ID order; should always have two */
     vector<size_t> vertices;
-    /** IDs of incident faces (2-faces), in increasing ID order; should always have two */
+    /** IDs of incident faces (2-faces), in increasing ID order; should always have at least two */
     vector<size_t> faces;
 
     /** Constructor for cell_edge. 
